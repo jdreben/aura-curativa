@@ -97,11 +97,9 @@ function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit, o
 	}
 	y -= 16;
 
-	text(page, 'Cómo enviar (escoja una):', 50, y, f.bold, 12);
+	text(page, 'Cómo enviar:', 50, y, f.bold, 12);
 	y -= 20;
 	text(page, `Correo electrónico: ${TRIPLE_S.email} (escanee todo en un PDF)`, 70, y, f.regular, 10.5);
-	y -= 16;
-	text(page, 'App Mi Triple-S o centro de servicio', 70, y, f.regular, 10.5);
 	y -= 16;
 	for (const l of wrap(`Correo postal: ${TRIPLE_S.mailTo.join(', ')}`, f.regular, 10.5, 480)) {
 		text(page, l, 70, y, f.regular, 10.5);

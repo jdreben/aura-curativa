@@ -92,14 +92,31 @@ const FM_PAVIA_FREE: ServiceId[] = ['pcp', 'especialista', 'laboratorio', 'radio
 
 export type Insurer = 'triple-s' | 'first-medical';
 
-export const CLAIM_RULES: Record<Insurer, { deadlineDays: number; send: string; form: string | null }> = {
-	'triple-s': { deadlineDays: 365, send: 'reembolso@ssspr.com, la app Mi Triple-S o PO Box 363628, San Juan, PR 00936-3628.', form: null },
+export type ClaimRules = {
+	deadlineDays: number;
+	email: string | null;
+	address: string[];
+	note?: string;
+	form: string | null;
+};
+
+export const CLAIM_RULES: Record<Insurer, ClaimRules> = {
+	'triple-s': {
+		deadlineDays: 365,
+		email: 'reembolso@ssspr.com',
+		address: ['Triple-S Salud', 'Departamento de Reembolsos', 'PO Box 363628', 'San Juan, PR 00936-3628'],
+		form: null
+	},
 	'first-medical': {
 		deadlineDays: 90,
-		send: 'las oficinas de First Medical (787-474-3999). La póliza no publica una dirección ni correo de reclamaciones; confírmelo al llamar.',
+		email: null,
+		address: ['First Medical Health Plan, Inc.', 'PO Box 191580', 'San Juan, PR 00918-1580'],
+		note: 'La póliza no publica una dirección exclusiva para reclamaciones. Confírmela al 787-474-3999.',
 		form: 'https://www.firstmedicalpr.com/wp-content/uploads/2024/09/FM-COM_CS_23.30_03_S_Solicitud-de-Reembolso_Spanish_Approved_02202023.pdf'
 	}
 };
+
+export const deadlineWords = (days: number) => (days === 365 ? 'un año' : `${days} días`);
 
 export type Estimate = {
 	verdict: 'reimbursable' | 'not-reimbursable' | 'direct' | 'unknown';

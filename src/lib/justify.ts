@@ -7,8 +7,8 @@ export type Question = { id: string; text: string; warnIfNo?: string };
 export function questionsFor(insurer: Insurer, route: RouteId): Question[] {
 	if (insurer === 'triple-s' && route === 'contigo-fit') {
 		return [
-			{ id: 'hra', text: '¿Completó la evaluación de salud (HRA) en la app Mi Triple-S?', warnIfNo: 'Complétela antes de someter: Contigo Fit la requiere.' },
-			{ id: 'preventiva', text: '¿Hizo su visita preventiva anual?', warnIfNo: 'Hágala en una clínica Salus o Centro Preventivo: Contigo Fit la requiere.' },
+			{ id: 'hra', text: '¿Completó la evaluación de salud (HRA) en la app Mi Triple-S?', warnIfNo: 'Complete la HRA en Mi Triple-S antes de someter: Contigo Fit la requiere.' },
+			{ id: 'preventiva', text: '¿Hizo su visita preventiva anual?', warnIfNo: 'Haga su visita preventiva en una clínica Salus o Centro Preventivo: Contigo Fit la requiere.' },
 			{ id: 'licencia', text: '¿Su proveedor está certificado y licenciado?', warnIfNo: 'Contigo Fit solo reembolsa proveedores certificados y licenciados.' }
 		];
 	}
@@ -82,4 +82,31 @@ export function providerRequest(insurer: Insurer): string {
 	return insurer === 'triple-s'
 		? 'Por favor complete y firme la sección E (Información sobre los servicios) del formulario adjunto, y devuélvamelo junto con un recibo original, timbrado y firmado, que incluya su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
 		: 'Por favor envíeme un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado, para someter mi reembolso a First Medical.';
+}
+
+export type Link = { label: string; href: string };
+
+export const LINKS = {
+	miTripleS: { label: 'Entrar a Mi Triple-S', href: 'https://salud.grupotriples.com/mitriples/' },
+	salus: { label: 'Ver clínicas Salus', href: 'https://salud.grupotriples.com/clinicas-salus/' },
+	directory: {
+		'triple-s': { label: 'Directorio de proveedores de Triple-S', href: 'https://salud.grupotriples.com/directorios-de-proveedores/' },
+		'first-medical': { label: 'Directorio de proveedores de First Medical', href: 'https://www.firstmedicalpr.com/directorio-de-proveedores/' }
+	}
+} satisfies Record<string, Link | Record<Insurer, Link>>;
+
+// Points a step or tip at the page where the patient can actually do it.
+export function linkFor(text: string, insurer: Insurer): Link | null {
+	if (/HRA|Mi Triple-S/.test(text)) return LINKS.miTripleS;
+	if (/preventiva|Salus/i.test(text)) return LINKS.salus;
+	if (/proveedor de la red|Triple-S Natural|preautoriza|autorización previa|aprobación por escrito/i.test(text)) {
+		return LINKS.directory[insurer];
+	}
+	return null;
+}
+
+export function appointmentRequest(insurer: Insurer): string {
+	return insurer === 'triple-s'
+		? 'En su cita o comunicación con el proveedor, pídale que por favor complete y firme la sección E (Información sobre los servicios) del formulario adjunto, y que le dé un recibo original, timbrado y firmado, con su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
+		: 'En su cita o comunicación con el proveedor, pídale que por favor le dé un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado.';
 }

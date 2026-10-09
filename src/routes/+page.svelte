@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import Linked from '#lib/components/Linked.svelte';
 	import { INSURERS, SERVICES, claimable, estimate } from '#lib/estimate.ts';
 	import type { Insurer, PatientPlanId, ServiceId } from '#lib/estimate.ts';
 
@@ -105,7 +106,7 @@
 			{#if est.alternatives.length > 0}
 				<p class="mt-4 text-sm font-semibold">Lo que le conviene:</p>
 				<ul class="mt-1 list-disc space-y-1 pl-5 text-sm">
-					{#each est.alternatives as alt (alt)}<li>{alt}</li>{/each}
+					{#each est.alternatives as alt (alt)}<li><Linked text={alt} insurer={est.insurer} /></li>{/each}
 				</ul>
 			{/if}
 		</section>

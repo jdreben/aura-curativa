@@ -103,6 +103,8 @@ test('patient who already got the service: guided form, review, fix, send to pro
 
 	await page.getByRole('button', { name: 'Continuar' }).click();
 	await expect(page.getByText('Conteste todas las preguntas.')).toBeVisible();
+	await page.getByRole('button', { name: 'No', exact: true }).first().click();
+	await expect(page.getByRole('link', { name: /Entrar a Mi Triple-S/ })).toHaveAttribute('href', 'https://salud.grupotriples.com/mitriples/');
 	for (const b of await page.getByRole('button', { name: 'Sí', exact: true }).all()) await b.click();
 	await shot(page, 'w1-questions');
 	await page.getByRole('button', { name: 'Continuar' }).click();
@@ -126,6 +128,9 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
 
 	await expect(page.getByText('Envíelo a su proveedor')).toBeVisible();
+	await expect(page.getByText('PO Box 363628')).toBeVisible();
+	await expect(page.getByText(/Envíelo por email a reembolso@ssspr\.com o por correo a:/)).toBeVisible();
+	await expect(page.getByText('app Mi Triple-S')).toHaveCount(0);
 	await page.getByRole('textbox', { name: 'Email del proveedor' }).fill('dra.rivera@example.com');
 	await page.getByRole('textbox', { name: 'Su email' }).fill('carmen@example.com');
 	await expect(page.getByRole('textbox', { name: 'Mensaje' })).toHaveValue(/complete y firme la sección E/);
@@ -146,6 +151,10 @@ test('patient before the service: preauthorization warning, form to bring', asyn
 	await page.goto('/reclamar?plan=fm-silver&servicio=quiropractico');
 	await page.getByRole('button', { name: 'Todavía no' }).click();
 	await expect(page.getByText('Necesita preautorización.')).toBeVisible();
+	await expect(page.getByRole('link', { name: /Directorio de proveedores de First Medical/ })).toHaveAttribute(
+		'href',
+		'https://www.firstmedicalpr.com/directorio-de-proveedores/'
+	);
 	await shot(page, 'w4-preauth');
 	await page.getByRole('button', { name: 'Continuar' }).click();
 	await page.getByRole('textbox', { name: 'Nombre*', exact: true }).fill('José');
@@ -160,7 +169,9 @@ test('patient before the service: preauthorization warning, form to bring', asyn
 	await page.getByLabel('Fecha de nacimiento').fill('1979-11-02');
 	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
-	await expect(page.getByText('Llévelo a su cita')).toBeVisible();
+	await expect(page.getByText('Llévelo a su cita o entrégueselo al proveedor')).toBeVisible();
+	await expect(page.getByText(/^En su cita o comunicación con el proveedor, pídale que por favor/)).toBeVisible();
+	await expect(page.getByText('PO Box 191580')).toBeVisible();
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),
 		page.getByRole('link', { name: 'Descargar para imprimir' }).click()

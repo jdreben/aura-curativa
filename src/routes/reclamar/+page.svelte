@@ -4,12 +4,14 @@
 	import { page } from '$app/state';
 	import Field from '#lib/components/Field.svelte';
 	import PatientFields from '#lib/components/PatientFields.svelte';
+	import Linked from '#lib/components/Linked.svelte';
 	import Problems from '#lib/components/Problems.svelte';
+	import SendTo from '#lib/components/SendTo.svelte';
 	import { emptyPatient, patientFullName } from '#lib/claim.ts';
 	import { demoPatients } from '#lib/demo.ts';
-	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
+	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, deadlineWords, estimate } from '#lib/estimate.ts';
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
-	import { letterParagraphs, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
+	import { appointmentRequest, letterParagraphs, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
 	import { buildPatientPacket } from '#lib/pdf/patient-packet.ts';
 	import { isoToForm } from '#lib/pdf/triple-s.ts';
 
@@ -169,13 +171,11 @@
 						`Envíe todo antes del ${deadline || 'plazo de su plan'}.`
 					]
 				: [
-						'Lleve este formulario a su cita.',
+						'Llévelo a su cita o entrégueselo al proveedor.',
 						...(preauth ? [preauth] : []),
 						...(est?.conditions ?? []),
-						insurer === 'triple-s'
-							? 'Pídale a su proveedor que complete y firme la sección E y le dé un recibo original timbrado y firmado.'
-							: 'Pídale a su proveedor un recibo original con su NPI, el diagnóstico (ICD-10) y los códigos CPT.',
-						`Después de la cita, añada la fecha y lo pagado, firme y envíe dentro de ${rules.deadlineDays === 365 ? 'un año' : `${rules.deadlineDays} días`}.`
+						appointmentRequest(insurer),
+						`Después del servicio, añada la fecha y lo pagado, firme y envíe dentro de ${deadlineWords(rules.deadlineDays)}.`
 					];
 			const bytes = await buildPatientPacket(template, {
 				insurer,
@@ -291,7 +291,7 @@
 					<h2 class="text-lg font-semibold text-slate-900">Antes de su cita</h2>
 					{#if preauth}
 						<p class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
-							<strong>Necesita preautorización.</strong> {preauth}
+							<strong>Necesita preautorización.</strong> <Linked text={preauth} {insurer} />
 						</p>
 					{:else}
 						<p class="mt-4 rounded-lg bg-teal-50 p-4 text-sm text-teal-900">
@@ -301,7 +301,7 @@
 					{#if (est?.conditions.length ?? 0) > 0}
 						<p class="mt-4 text-sm font-semibold text-slate-800">Para que le reembolsen:</p>
 						<ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
-							{#each est?.conditions ?? [] as c (c)}<li>{c}</li>{/each}
+							{#each est?.conditions ?? [] as c (c)}<li><Linked text={c} {insurer} /></li>{/each}
 						</ul>
 					{/if}
 					<p class="mt-4 text-sm text-slate-700">
@@ -332,7 +332,7 @@
 					</div>
 					{#if warnings.length > 0}
 						<ul class="mt-4 space-y-1 text-sm text-amber-900">
-							{#each warnings as w (w)}<li>⚠ {w}</li>{/each}
+							{#each warnings as w (w)}<li>⚠ <Linked text={w} {insurer} /></li>{/each}
 						</ul>
 					{/if}
 					{#if attempted && questions.some((q) => answers[q.id] === undefined)}
@@ -456,23 +456,25 @@
 							<a href={pdf.url} download="reembolso.pdf" class="mt-2 inline-block {secondary}">Descargar para imprimir</a>
 						{/if}
 					</div>
-					<p class="mt-6 rounded-lg bg-teal-50 p-4 text-sm text-teal-900">
-						Cuando su proveedor se lo devuelva, firme y envíe todo a {rules.send}
-						<strong>Fecha límite: {deadline}.</strong>
-					</p>
+					<div class="mt-6 rounded-lg bg-teal-50 p-4 text-sm text-teal-900">
+						<p class="font-semibold">Cuando su proveedor se lo devuelva, firme y envíe todo.</p>
+						<div class="mt-2"><SendTo {insurer} {deadline} /></div>
+					</div>
 				{:else}
-					<h2 class="text-lg font-semibold text-slate-900">Llévelo a su cita</h2>
+					<h2 class="text-lg font-semibold text-slate-900">Llévelo a su cita o entrégueselo al proveedor</h2>
 					{#if pdf.status === 'ready'}
 						<a href={pdf.url} download="reembolso.pdf" class="mt-4 inline-block {primary}">Descargar para imprimir</a>
 					{/if}
-					<p class="mt-4 text-sm text-slate-700">En la cita: {providerRequest(insurer)}</p>
+					<p class="mt-4 text-sm text-slate-700">{appointmentRequest(insurer)}</p>
 					{#if preauth}
-						<p class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{preauth}</p>
+						<p class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+							<Linked text={preauth} {insurer} />
+						</p>
 					{/if}
-					<p class="mt-4 text-sm text-slate-700">
-						Después, añada la fecha y lo pagado, firme y envíe a {rules.send}
-						Tiene {rules.deadlineDays === 365 ? 'un año' : `${rules.deadlineDays} días`} desde el servicio.
-					</p>
+					<div class="mt-4 rounded-lg bg-teal-50 p-4 text-sm text-teal-900">
+						<p class="font-semibold">Después del servicio, añada la fecha y lo pagado, y firme.</p>
+						<div class="mt-2"><SendTo {insurer} /></div>
+					</div>
 				{/if}
 			{/if}
 

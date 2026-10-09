@@ -3,7 +3,7 @@ import type { PDFFont, PDFPage } from 'pdf-lib';
 import type { Patient } from '../claim.ts';
 import { emptyProvider, emptyVisit, patientFullName } from '../claim.ts';
 import type { Insurer } from '../estimate.ts';
-import { CLAIM_RULES } from '../estimate.ts';
+import { CLAIM_RULES, deadlineWords } from '../estimate.ts';
 import type { RouteId } from '../plans.ts';
 import { fillFirstMedical, FIRST_MEDICAL } from './first-medical.ts';
 import { fillTripleS, isoToForm, TRIPLE_S, winAnsi } from './triple-s.ts';
@@ -80,7 +80,22 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	y -= 12;
 	page.drawText('Cómo enviar', { x: 50, y, size: 12, font: f.bold });
 	y -= 20;
-	paragraph(page, `Envíelo a ${CLAIM_RULES[i.insurer].send}`, 70, y, f.regular, 10.5, 480);
+	const rules = CLAIM_RULES[i.insurer];
+	y = paragraph(page, rules.email ? `Por email a ${rules.email} o por correo a:` : 'Por correo a:', 70, y, f.regular, 10.5, 480) - 6;
+	for (const line of rules.address) {
+		page.drawText(winAnsi(line), { x: 90, y, size: 10.5, font: f.regular });
+		y -= 14;
+	}
+	if (rules.note) y = paragraph(page, rules.note, 70, y - 4, f.regular, 9, 480, GRAY);
+	paragraph(
+		page,
+		`Tiene ${deadlineWords(rules.deadlineDays)} desde la fecha del servicio para solicitar el reembolso${i.deadline ? ` (fecha límite: ${i.deadline})` : ''}.`,
+		70,
+		y - 8,
+		f.regular,
+		10.5,
+		480
+	);
 	page.drawText(
 		winAnsi('Generado en su dispositivo por Healing Aura. Ningún dato se guardó en un servidor. No es asesoría legal ni de seguros.'),
 		{ x: 50, y: 48, size: 8.5, font: f.regular, color: GRAY }
@@ -100,7 +115,7 @@ function drawLetter(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	y -= 15;
 	page.drawText(date, { x: 72, y, size: 11, font: f.regular });
 	y -= 30;
-	const to = i.insurer === 'triple-s' ? [...TRIPLE_S.mailTo] : ['First Medical Health Plan, Inc.', 'Reembolsos', 'PO Box 191580', 'San Juan, PR 00918-1580'];
+	const to = CLAIM_RULES[i.insurer].address;
 	for (const l of to) {
 		page.drawText(winAnsi(l), { x: 72, y, size: 11, font: f.regular });
 		y -= 15;
