@@ -60,7 +60,8 @@ npm run check      # svelte-check
 npm run build      # static site in build/
 npm run e2e        # Playwright, desktop + phone: patient estimate → form; provider QR → accept → print
                    # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
-npm run demo-video # records demo-video/healing-aura-demo.mp4 (needs npm run preview, ffmpeg, pdftoppm)
+npm run demo-video          # patient-flow video → demo-video/healing-aura-patient.mp4 (ffmpeg, pdftoppm)
+npm run demo-video:provider # provider-flow video → demo-video/healing-aura-provider.mp4
 scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 ```
 

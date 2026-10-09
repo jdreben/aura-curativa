@@ -1,11 +1,11 @@
-// Records the demo video: node scripts/record-demo.mjs (needs `npm run preview` on :4173, ffmpeg, pdftoppm).
+// Provider-flow demo video: node scripts/record-demo.mjs (BASE defaults to the live site; needs ffmpeg, pdftoppm).
 import { chromium, devices } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASE = process.env.BASE ?? 'http://localhost:4173';
-const OUT = 'demo-video';
+const BASE = process.env.BASE ?? 'https://18-212-154-202.sslip.io';
+const OUT = join('demo-video', 'provider');
 const RAW = join(OUT, 'raw');
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(RAW, { recursive: true });
@@ -66,13 +66,9 @@ const desk = await browser.newContext({
 });
 const p1 = await desk.newPage();
 const t0 = Date.now();
-await p1.goto(BASE);
-await caption(p1, 'Many PR providers don’t take insurance. Patients pay — and rarely get reimbursed.');
+await p1.goto(`${BASE}/proveedor`);
+await caption(p1, 'For providers: prepare the whole claim for the patient from data the office already has.');
 await sleep(3000);
-await caption(p1, 'Healing Aura checks what the patient’s plan actually reimburses, then files it right.');
-await sleep(3000);
-await press(p1.getByRole('link', { name: 'Preparar una reclamación' }));
-await p1.waitForURL('**/proveedor');
 await caption(p1, 'Patient and plan come straight from the practice’s intake records (simulated here).');
 await sleep(1200);
 const picker = p1.getByRole('combobox', { name: 'Importar del expediente' });
@@ -114,6 +110,7 @@ const phone = await browser.newContext({
 });
 const p2 = await phone.newPage();
 await p2.goto(link);
+await p2.getByText('Qué esperar').waitFor();
 await caption(p2, 'The patient scans and sees the completed claim. Nothing to type.');
 await sleep(3000);
 await glide(p2, 900);
@@ -188,7 +185,7 @@ const seg = (n) => {
 	const dir = join(RAW, n);
 	return join(dir, readdirSync(dir).find((f) => f.endsWith('.webm')));
 };
-const final = join(OUT, 'healing-aura-demo.mp4');
+const final = join('demo-video', 'healing-aura-provider.mp4');
 const fit = 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=0xccfbf1,setsar=1,fps=30';
 execFileSync(
 	'ffmpeg',
