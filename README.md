@@ -2,6 +2,8 @@
 
 Out-of-network reimbursement for patients in Puerto Rico, without the paperwork wall.
 
+**Live demo:** https://18-212-154-202.sslip.io (no account needed — click *Datos de ejemplo*)
+
 Many good providers in Puerto Rico don't take insurance. Patients pay out of pocket, and most never file
 for the out-of-network reimbursement their plan owes them, because the claim form is confusing and gets
 returned for missing details. Healing Aura splits the form between the people who actually have the
@@ -32,6 +34,10 @@ npm run dev        # http://localhost:5173
 npm run test       # payload round-trip, validators, PDF packet
 npm run check      # svelte-check
 npm run build      # static site in build/
+npm run e2e        # Playwright: provider → QR → patient → PDF, desktop + phone
+                   # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
+npm run demo-video # records demo-video/healing-aura-demo.mp4 (needs npm run preview, ffmpeg, pdftoppm)
+scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 ```
 
 Click **Datos de ejemplo** on the provider page, generate the QR code, then **Abrir como paciente** and

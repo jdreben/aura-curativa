@@ -73,9 +73,9 @@ license number or a receipt that says "balance pending."
 
 ## Built With
 
-svelte, sveltekit, typescript, tailwindcss, pdf-lib, qrcode, vite, vitest
+svelte, sveltekit, typescript, tailwindcss, pdf-lib, qrcode, vite, vitest, playwright, aws-ec2, caddy
 
 ## Try it out
 
-- Live demo: _TBD_
+- Live demo: https://18-212-154-202.sslip.io
 - Code: https://github.com/jdreben/healing-aura
