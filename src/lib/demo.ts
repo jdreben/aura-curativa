@@ -62,7 +62,8 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupName: 'Empresa Ejemplo, Inc.',
 			hasOtherCoverage: false,
 			medicareEligible: false,
-			plan: 'pocket-plata'
+			plan: 'pocket-plata',
+			dob: '1986-03-14'
 		}
 	},
 	{
@@ -85,7 +86,8 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupName: 'Cooperativa Ejemplo',
 			hasOtherCoverage: false,
 			medicareEligible: false,
-			plan: 'directo-plata'
+			plan: 'directo-plata',
+			dob: '1979-11-02'
 		}
 	},
 	{
@@ -108,7 +110,8 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupName: 'Municipio Ejemplo',
 			hasOtherCoverage: true,
 			medicareEligible: false,
-			plan: 'otro'
+			plan: 'otro',
+			dob: '1991-07-25'
 		}
 	}
 ];

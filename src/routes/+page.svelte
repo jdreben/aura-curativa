@@ -1,46 +1,15 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import { resolve } from '$app/paths';
-	import PatientFields from '#lib/components/PatientFields.svelte';
-	import Problems from '#lib/components/Problems.svelte';
-	import { emptyPatient, emptyProvider, emptyVisit, patientProblems } from '#lib/claim.ts';
-	import type { ServiceLine } from '#lib/claim.ts';
-	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
+	import { INSURERS, SERVICES, claimable, estimate } from '#lib/estimate.ts';
 	import type { Insurer, PatientPlanId, ServiceId } from '#lib/estimate.ts';
-	import { packetObjectUrl } from '#lib/pdf/browser.ts';
-	import { TRIPLE_S } from '#lib/pdf/triple-s.ts';
-	import type { PlanId } from '#lib/plans.ts';
-
-	const today = () => {
-		const d = new Date();
-		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-	};
 
 	let insurer = $state<Insurer | ''>('');
 	let plan = $state<PatientPlanId | ''>('');
 	const insurerPlans = $derived(INSURERS.find((i) => i.id === insurer)?.plans ?? []);
 	let service = $state<ServiceId | ''>('');
-	let paid = $state('');
-	let date = $state(today());
-	let patient = $state(emptyPatient());
-	let attempted = $state(false);
-	let packet = $state<
-		| { status: 'idle' }
-		| { status: 'loading' }
-		| { status: 'error'; message: string }
-		| { status: 'ready'; url: string }
-	>({ status: 'idle' });
 
 	const est = $derived(estimate(plan, service, 0));
 	const canClaim = $derived(claimable(est));
-	const formPlan = $derived<PlanId>(
-		plan === '' || plan.startsWith('fm-') ? 'otro' : (plan as PlanId)
-	);
-	const problems = $derived([
-		...patientProblems({ ...patient, plan: formPlan }),
-		...(Number.parseFloat(paid) > 0 ? [] : ['Indique cuánto pagó.']),
-		...(date ? [] : ['Indique la fecha del servicio.'])
-	]);
 	const EXAMPLES: { label: string; insurer: Insurer; plan: PatientPlanId; service: ServiceId }[] = [
 		{ label: 'Acupuntura · Triple-S Pocket Plata', insurer: 'triple-s', plan: 'pocket-plata', service: 'acupuntura' },
 		{ label: 'Especialista · First Medical Silver', insurer: 'first-medical', plan: 'fm-silver', service: 'especialista' },
@@ -51,48 +20,8 @@
 		insurer = ex.insurer;
 		plan = ex.plan;
 		service = ex.service;
-		resetPacket();
 	}
 
-	const serviceName = $derived(SERVICES.find((s) => s.id === service)?.name ?? '');
-
-	function resetPacket() {
-		if (packet.status === 'ready') URL.revokeObjectURL(packet.url);
-		packet = { status: 'idle' };
-	}
-
-	async function prepare() {
-		attempted = true;
-		if (problems.length > 0 || !est?.route) return;
-		resetPacket();
-		packet = { status: 'loading' };
-		try {
-			const line: ServiceLine = {
-				dateFrom: date,
-				dateTo: date,
-				placeOfService: '11',
-				description: serviceName,
-				cpt: '',
-				modifier: '',
-				units: '1',
-				amountPaid: Number.parseFloat(paid).toFixed(2)
-			};
-			const url = await packetObjectUrl(
-				{
-					v: 2,
-					provider: emptyProvider(),
-					visit: { ...emptyVisit(), route: est.route, lines: [line] },
-					patient: { ...$state.snapshot(patient), plan: formPlan }
-				},
-				{ receipt: false, expected: est.headline }
-			);
-			packet = { status: 'ready', url };
-		} catch (e) {
-			packet = { status: 'error', message: e instanceof Error ? e.message : String(e) };
-		}
-	}
-
-	onDestroy(resetPacket);
 </script>
 
 <section class="text-center">
@@ -182,100 +111,18 @@
 		</section>
 	{/if}
 
-	{#if est && canClaim && est.insurer}
-		{@const rules = CLAIM_RULES[est.insurer]}
-		<section class="rounded-xl border border-slate-200 bg-white p-5">
-			<h2 class="text-sm font-semibold text-slate-800">4 · Cómo reclamarlo</h2>
-			<label class="mt-3 block w-48">
-				<span class="text-sm font-medium text-slate-700">Fecha del servicio</span>
-				<input
-					type="date"
-					bind:value={date}
-					class="mt-1 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
-				/>
-			</label>
-			<ol class="mt-4 list-decimal space-y-2 pl-5 text-sm text-slate-700">
-				{#each est.conditions as c (c)}<li>{c}</li>{/each}
-				<li>
-					Pídale a su proveedor un <strong>recibo original, timbrado y firmado</strong> con su nombre,
-					dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código (CPT) de cada servicio y
-					lo que usted pagó. Recibos de caja o de "balance pendiente" no se aceptan.
-				</li>
-				{#if est.insurer === 'triple-s'}
-					<li>Pídale que complete y firme la sección E del formulario que preparamos abajo.</li>
-				{:else if rules.form}
-					<li>
-						Llene la
-						<a href={rules.form} target="_blank" rel="noopener" class="font-medium text-teal-700 underline">Solicitud de Reembolso de First Medical</a>
-						y marque "Proveedor no acepta el plan".
-					</li>
-				{/if}
-				<li>Envíelo a {rules.send}</li>
-				<li>
-					<strong>Fecha límite: {deadlineFrom(date, rules.deadlineDays) || `${rules.deadlineDays} días después del servicio`}</strong>
-					({rules.deadlineDays === 365 ? 'un año' : `${rules.deadlineDays} días`} desde el servicio).
-				</li>
-			</ol>
-
-			{#if est.insurer === 'triple-s'}
-			<form
-				class="mt-6 space-y-4 border-t border-slate-100 pt-5"
-				onsubmit={(e) => {
-					e.preventDefault();
-					prepare();
-				}}
-			>
-				<p class="text-sm font-semibold text-slate-800">Prepare su formulario</p>
-				<label class="relative block w-48">
-					<span class="text-sm font-medium text-slate-700">Cuánto pagó<span class="text-rose-600"> *</span></span>
-					<span class="pointer-events-none absolute bottom-2 left-3 text-sm text-slate-500">$</span>
-					<input
-						bind:value={paid}
-						inputmode="decimal"
-						class="mt-1 block w-full rounded-lg border-slate-300 pl-7 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
-					/>
-				</label>
-				<PatientFields bind:patient showPlan={false} />
-				{#if attempted}<Problems {problems} />{/if}
-				{#if packet.status === 'ready'}
-					<div class="flex flex-col gap-2 sm:flex-row">
-						<a
-							href={packet.url}
-							download="reembolso-triple-s.pdf"
-							class="rounded-lg bg-teal-700 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-teal-800"
-						>
-							Descargar formulario
-						</a>
-						<a
-							href={packet.url}
-							target="_blank"
-							rel="noopener"
-							class="rounded-lg border border-slate-300 px-4 py-2 text-center text-sm hover:bg-slate-50"
-						>
-							Ver / imprimir
-						</a>
-					</div>
-				{:else}
-					<button
-						type="submit"
-						disabled={packet.status === 'loading'}
-						class="w-full rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white shadow hover:bg-teal-800 disabled:opacity-60"
-					>
-						{packet.status === 'loading' ? 'Preparando…' : 'Preparar mi formulario'}
-					</button>
-				{/if}
-				{#if packet.status === 'error'}
-					<p class="text-sm text-rose-700" role="alert">
-						No se pudo preparar el formulario: {packet.message}. Intente de nuevo.
-					</p>
-				{/if}
-			</form>
-			{/if}
-
-			<p class="mt-5 text-sm text-slate-600">
-				¿Su proveedor prefiere prepararlo por usted? Compártale
-				<a href={resolve('/proveedor')} class="font-medium text-teal-700 underline">la versión para proveedores</a>.
+	{#if est && canClaim}
+		<section class="rounded-xl border border-teal-200 bg-white p-6 text-center">
+			<h2 class="text-lg font-semibold text-teal-900">¿Quiere ayuda con el proceso?</h2>
+			<p class="mt-1 text-sm text-slate-600">
+				Le llenamos el formulario de {est.insurer === 'triple-s' ? 'Triple-S' : 'First Medical'} y se lo preparamos para su proveedor.
 			</p>
+			<a
+				href={`${resolve('/reclamar')}?${new URLSearchParams({ plan, servicio: service })}`}
+				class="mt-4 inline-block rounded-xl bg-teal-700 px-8 py-3 font-semibold text-white shadow hover:bg-teal-800"
+			>
+				¡Empecemos!
+			</a>
 		</section>
 	{/if}
 

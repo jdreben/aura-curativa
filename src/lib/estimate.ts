@@ -93,7 +93,7 @@ const FM_PAVIA_FREE: ServiceId[] = ['pcp', 'especialista', 'laboratorio', 'radio
 export type Insurer = 'triple-s' | 'first-medical';
 
 export const CLAIM_RULES: Record<Insurer, { deadlineDays: number; send: string; form: string | null }> = {
-	'triple-s': { deadlineDays: 365, send: 'reembolso@ssspr.com, la app Mi Triple-S o PO Box 363628, San Juan, PR 00936-3628', form: null },
+	'triple-s': { deadlineDays: 365, send: 'reembolso@ssspr.com, la app Mi Triple-S o PO Box 363628, San Juan, PR 00936-3628.', form: null },
 	'first-medical': {
 		deadlineDays: 90,
 		send: 'las oficinas de First Medical (787-474-3999). La póliza no publica una dirección ni correo de reclamaciones; confírmelo al llamar.',

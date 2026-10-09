@@ -31,9 +31,18 @@ We read the 2027 policies and published estimates so patients don't have to:
 2. **Su servicio.** Pick the service and enter what it costs.
 3. **Su respuesta.** Reimbursable or not, the estimate back and what they'll still owe, the reasoning,
    and cheaper alternatives (an in-network copay, Triple-S Natural, SALUS or Metro Pavía at $0).
-4. **Cómo reclamarlo.** What to ask the provider for, the deadline, and where to send it. For Triple-S
-   the app fills in the official claim form (patient sections plus services) for the provider to
-   complete and sign. For First Medical it links the insurer's form.
+4. **¿Quiere ayuda con el proceso? → ¡Empecemos!** (only when something is reimbursable) opens a guided
+   claim at `/reclamar`:
+   - *¿Ya recibió el servicio?* **Sí:** date, amount, provider; plan-specific questions that justify the
+     claim (e.g. Contigo Fit's HRA and preventive visit); then only the personal details the app can't
+     fill. It generates the insurer's form (Triple-S's official AcroForm, or First Medical's 2023 form by
+     coordinates), a cover sheet, and a **letter citing the policy clause** that entitles the refund.
+   - **Todavía no:** a preauthorization warning when the plan requires one, then the form filled as far as
+     possible to bring to the appointment.
+   - **Review:** a summary plus the PDF; *Corregir algo* opens every field, then regenerates.
+   - **Send to the provider:** a prefilled email asking them to complete and sign their part. On phones it
+     shares the PDF through the share sheet; elsewhere it opens the patient's email app and downloads the
+     PDF to attach. The email goes from the patient's own account; nothing touches a server.
 
 Providers can also prepare the whole claim for the patient at [`/proveedor`](https://18-212-154-202.sslip.io/proveedor):
 import the patient, run the same coverage check, and hand over a QR code. The patient reviews and

@@ -50,6 +50,7 @@ export type Patient = {
 	hasOtherCoverage: boolean;
 	medicareEligible: boolean;
 	plan: PlanId | '';
+	dob: string;
 };
 
 export type Insurer = 'triple-s';
@@ -111,7 +112,8 @@ export const emptyPatient = (): Patient => ({
 	groupName: '',
 	hasOtherCoverage: false,
 	medicareEligible: false,
-	plan: ''
+	plan: '',
+	dob: ''
 });
 
 function toBase64Url(bytes: Uint8Array): string {

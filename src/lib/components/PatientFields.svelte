@@ -22,7 +22,7 @@
 	<Field label="Apellido paterno" bind:value={patient.lastNamePaternal} required />
 	<Field label="Apellido materno" bind:value={patient.lastNameMaternal} />
 	<Field
-		label="Contrato Triple-S"
+		label="Número de contrato"
 		bind:value={patient.contractNumber}
 		required
 		placeholder="ZUA123456789"

@@ -67,7 +67,7 @@ test('provider prepares, patient accepts, provider prints', async ({ page, conte
 	await expect(page.getByText('La información cambió')).toBeVisible();
 });
 
-test('patient learns what comes back, then prepares the form', async ({ page }) => {
+test('patient learns what comes back', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.getByRole('combobox', { name: 'Su plan' })).toHaveCount(0);
 	await page.getByRole('combobox', { name: 'Aseguradora' }).selectOption('triple-s');
@@ -76,41 +76,102 @@ test('patient learns what comes back, then prepares the form', async ({ page }) 
 	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('especialista');
 	await expect(page.getByText('No: su plan no reembolsa este servicio fuera de la red')).toBeVisible();
 	await expect(page.getByText('Con un proveedor de la red le costaría $15.')).toBeVisible();
-	await expect(page.getByText('4 · Cómo reclamarlo')).toHaveCount(0);
+	await expect(page.getByRole('link', { name: '¡Empecemos!' })).toHaveCount(0);
 	await shot(page, 'p1-no');
 
 	await page.getByRole('combobox', { name: 'Aseguradora' }).selectOption('first-medical');
 	await expect(page.getByRole('combobox', { name: 'Su plan' })).toHaveValue('');
 	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('fm-silver');
 	await expect(page.getByText('Sí: First Medical reembolsa fuera de la red')).toBeVisible();
-	await expect(page.getByText(/90 días desde el servicio/)).toBeVisible();
-	await expect(page.getByRole('link', { name: 'Solicitud de Reembolso de First Medical' })).toBeVisible();
-	await shot(page, 'p2b-first-medical');
+	await expect(page.getByText('¿Quiere ayuda con el proceso?')).toBeVisible();
+	await shot(page, 'p2-first-medical');
+});
 
+test('patient who already got the service: guided form, review, fix, send to provider', async ({ page }) => {
+	await page.goto('/');
 	await page.getByRole('button', { name: 'Acupuntura · Triple-S Pocket Plata' }).click();
-	await expect(page.getByRole('combobox', { name: 'Su plan' })).toHaveValue('pocket-plata');
 	await expect(page.getByText('Sí, por Contigo Fit: $20 al mes')).toBeVisible();
-	await expect(page.getByText('4 · Cómo reclamarlo')).toBeVisible();
+	await page.getByRole('link', { name: '¡Empecemos!' }).click();
+	await expect(page).toHaveURL(/reclamar\?plan=pocket-plata&servicio=acupuntura/);
 
-	await page.getByRole('button', { name: 'Preparar mi formulario' }).click();
-	await expect(page.getByText('Antes de continuar, corrija:')).toBeVisible();
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	await page.getByRole('button', { name: 'Continuar' }).click();
 	await expect(page.getByText('Indique cuánto pagó.')).toBeVisible();
-	await page.getByRole('textbox', { name: 'Cuánto pagó*' }).fill('90');
+	await page.getByRole('textbox', { name: 'Cuánto pagó ($)*' }).fill('90');
+	await page.getByRole('textbox', { name: 'Nombre del proveedor' }).fill('Dra. Isabel Rivera');
+	await page.getByRole('button', { name: 'Continuar' }).click();
+
+	await page.getByRole('button', { name: 'Continuar' }).click();
+	await expect(page.getByText('Conteste todas las preguntas.')).toBeVisible();
+	for (const b of await page.getByRole('button', { name: 'Sí', exact: true }).all()) await b.click();
+	await shot(page, 'w1-questions');
+	await page.getByRole('button', { name: 'Continuar' }).click();
+
 	await page.getByRole('textbox', { name: 'Nombre*', exact: true }).fill('Carmen');
-	await page.getByLabel('Apellido paterno').fill('Ortiz');
-	await page.getByLabel('Contrato Triple-S').fill('ZUA123456789');
-	await page.getByLabel('Dirección postal').fill('Calle 3 #45');
-	await page.getByLabel('Ciudad / pueblo').fill('San Juan');
+	await page.getByRole('textbox', { name: 'Apellido paterno*' }).fill('Ortiz');
+	await page.getByRole('textbox', { name: 'Número de contrato*' }).fill('ZUA123456789');
+	await page.getByRole('textbox', { name: 'Dirección postal*' }).fill('Calle 3 #45');
+	await page.getByRole('textbox', { name: 'Pueblo*' }).fill('San Juan');
 	await page.getByRole('textbox', { name: 'Código postal*' }).fill('00924');
-	await page.getByRole('textbox', { name: 'Teléfono*', exact: true }).fill('(787) 555-0199');
-	await page.getByRole('button', { name: 'Preparar mi formulario' }).click();
+	await page.getByRole('textbox', { name: 'Teléfono*' }).fill('(787) 555-0199');
+	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
+
+	await expect(page.getByText('Revise su formulario')).toBeVisible();
+	await expect(page.getByText('Calle 3 #45, San Juan, PR 00924')).toBeVisible();
+	await shot(page, 'w2-review');
+	await page.getByRole('button', { name: 'Corregir algo' }).click();
+	await page.getByRole('textbox', { name: 'Código postal*' }).fill('00926');
+	await page.getByRole('button', { name: 'Guardar y volver a llenar' }).click();
+	await expect(page.getByText('Calle 3 #45, San Juan, PR 00926')).toBeVisible();
+	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
+
+	await expect(page.getByText('Envíelo a su proveedor')).toBeVisible();
+	await page.getByRole('textbox', { name: 'Email del proveedor' }).fill('dra.rivera@example.com');
+	await page.getByRole('textbox', { name: 'Su email' }).fill('carmen@example.com');
+	await expect(page.getByRole('textbox', { name: 'Mensaje' })).toHaveValue(/complete y firme la sección E/);
+	const href = (await page.getByRole('link', { name: 'Abrir en mi email' }).getAttribute('href')) ?? '';
+	expect(href).toMatch(/^mailto:dra\.rivera%40example\.com\?cc=carmen%40example\.com/);
+	expect(decodeURIComponent(href)).toContain('Saludos, Dra. Isabel Rivera:');
+	await shot(page, 'w3-send');
+
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),
-		page.getByRole('link', { name: 'Descargar formulario' }).click()
+		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
-	expect(pdf.getPageCount()).toBe(3);
-	await shot(page, 'p3-form');
+	expect(pdf.getPageCount()).toBe(4);
+});
+
+test('patient before the service: preauthorization warning, form to bring', async ({ page }) => {
+	await page.goto('/reclamar?plan=fm-silver&servicio=quiropractico');
+	await page.getByRole('button', { name: 'Todavía no' }).click();
+	await expect(page.getByText('Necesita preautorización.')).toBeVisible();
+	await shot(page, 'w4-preauth');
+	await page.getByRole('button', { name: 'Continuar' }).click();
+	await page.getByRole('textbox', { name: 'Nombre*', exact: true }).fill('José');
+	await page.getByRole('textbox', { name: 'Apellido paterno*' }).fill('Rivera');
+	await page.getByRole('textbox', { name: 'Número de contrato*' }).fill('FM123456');
+	await page.getByRole('textbox', { name: 'Dirección postal*' }).fill('Calle Ponce 210');
+	await page.getByRole('textbox', { name: 'Pueblo*' }).fill('Ponce');
+	await page.getByRole('textbox', { name: 'Código postal*' }).fill('00730');
+	await page.getByRole('textbox', { name: 'Teléfono*' }).fill('(787) 555-0123');
+	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
+	await expect(page.getByText('Falta su fecha de nacimiento.')).toBeVisible();
+	await page.getByLabel('Fecha de nacimiento').fill('1979-11-02');
+	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
+	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
+	await expect(page.getByText('Llévelo a su cita')).toBeVisible();
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
+	]);
+	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
+	expect(pdf.getPageCount()).toBe(2);
+});
+
+test('claim page without a valid plan says so', async ({ page }) => {
+	await page.goto('/reclamar?plan=nope&servicio=especialista');
+	await expect(page.getByText('No encontramos un reembolso que preparar.')).toBeVisible();
 });
 
 test('bad link shows an error, not a blank page', async ({ page }) => {
