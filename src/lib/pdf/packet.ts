@@ -43,7 +43,7 @@ function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit) {
 	text(page, 'Antes de enviar, verifique:', 50, y, f.bold, 12);
 	y -= 20;
 	const steps = [
-		'Firme y feche la sección D (Autorización del paciente) del formulario.',
+		'El paciente firma y fecha la sección D (Autorización del paciente).',
 		'El médico firma y pone su sello timbrado en la sección E y en la factura detallada.',
 		'Incluya la factura detallada (incluida en este paquete) firmada por el proveedor.',
 		`Su número de contrato (${patient.contractNumber || '—'}) aparece en cada documento.`,

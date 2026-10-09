@@ -6,21 +6,26 @@ Out-of-network reimbursement for patients in Puerto Rico, without the paperwork 
 
 Many good providers in Puerto Rico don't take insurance. Patients pay out of pocket, and most never file
 for the out-of-network reimbursement their plan owes them, because the claim form is confusing and gets
-returned for missing details. Healing Aura splits the form between the people who actually have the
-information:
+returned for missing details. The provider's office already has every detail the form needs, so
+Healing Aura has the office prepare the claim and the patient just confirms it:
 
-1. **Provider** fills in their part once (NPI, license, ICD-10 diagnoses, CPT services, amounts paid) and
-   gets a QR code.
-2. **Patient** scans it on their phone and adds only what they know: name, contract number, address.
-3. The app produces a ready-to-mail packet: the official **Triple-S Salud** reimbursement form filled
+1. **Provider** imports the patient from their intake records (simulated in the demo), adds ICD-10
+   diagnoses and CPT services, and generates a QR code.
+2. **Patient** scans it, reviews the fully completed claim on their phone, certifies it and taps
+   *Acepto*. The phone shows a 4-digit code derived from that exact version of the claim.
+3. **Provider** types the code, which unlocks printing: the official **Triple-S Salud** form filled
    in, the itemized receipt (*factura detallada*) Triple-S requires, and a cover sheet with the mailing
-   address and a checklist.
+   address and checklist. The patient signs section D; the provider signs and stamps.
+
+If the provider edits anything after generating the QR, the old code stops working and they must
+generate a new one, so the patient always approves what gets printed. The code shows the patient
+opened and accepted that version; it is not a cryptographic signature.
 
 ## Privacy model
 
 There is no backend and no database.
 
-- Provider data travels **inside the QR link's `#fragment`**, which browsers never send to a server.
+- The claim travels **inside the QR link's `#fragment`**, which browsers never send to a server.
 - The PDF is generated **in the browser** with `pdf-lib`. Closing the tab discards everything.
 - The site is static files only. Hosting logs see a page request, never claim data.
 
@@ -34,7 +39,7 @@ npm run dev        # http://localhost:5173
 npm run test       # payload round-trip, validators, PDF packet
 npm run check      # svelte-check
 npm run build      # static site in build/
-npm run e2e        # Playwright: provider → QR → patient → PDF, desktop + phone
+npm run e2e        # Playwright: provider → QR → patient accepts → provider prints, desktop + phone
                    # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
 npm run demo-video # records demo-video/healing-aura-demo.mp4 (needs npm run preview, ffmpeg, pdftoppm)
 scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
@@ -55,6 +60,8 @@ adding one more mapping file.
 - Triple-S only so far. MCS (commercial and Classicare) is next — the forms are public and ask for the
   same data.
 - The provider still signs and stamps (*sello timbrado*) by hand; the patient signs section D by hand.
+- The intake-record import is simulated with three synthetic patients; a real version would read from
+  the practice's EHR or intake form.
 - No eligibility check yet, so the app can't tell a patient up front whether their plan pays
   out-of-network or how much. It makes the claim complete; it doesn't promise it will be paid.
 - Prescriptions and labs use different forms and aren't covered.

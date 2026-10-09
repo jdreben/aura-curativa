@@ -28,11 +28,6 @@ export type Visit = {
 	lines: ServiceLine[];
 };
 
-export type ProviderPayload = {
-	v: 1;
-	provider: Provider;
-	visit: Visit;
-};
 
 export type Patient = {
 	lastNamePaternal: string;
@@ -54,6 +49,13 @@ export type Patient = {
 };
 
 export type Insurer = 'triple-s';
+
+export type ClaimPayload = {
+	v: 2;
+	provider: Provider;
+	visit: Visit;
+	patient: Patient;
+};
 
 export const MAX_LINES = 6;
 
@@ -123,7 +125,7 @@ async function pipe(bytes: Uint8Array, stream: CompressionStream | Decompression
 }
 
 // Compressed so the QR stays sparse enough to scan from a phone held at arm's length.
-export async function encodePayload(payload: ProviderPayload): Promise<string> {
+export async function encodePayload(payload: ClaimPayload): Promise<string> {
 	const compact = {
 		...payload,
 		visit: { ...payload.visit, diagnoses: payload.visit.diagnoses.filter((d) => d.trim()) }
@@ -132,7 +134,7 @@ export async function encodePayload(payload: ProviderPayload): Promise<string> {
 	return toBase64Url(await pipe(json, new CompressionStream('deflate-raw')));
 }
 
-export async function decodePayload(encoded: string): Promise<ProviderPayload> {
+export async function decodePayload(encoded: string): Promise<ClaimPayload> {
 	const json = await pipe(fromBase64Url(encoded), new DecompressionStream('deflate-raw'));
 	const parsed: unknown = JSON.parse(new TextDecoder().decode(json));
 	if (!isPayload(parsed)) throw new Error('Formato de enlace no reconocido');
@@ -140,8 +142,9 @@ export async function decodePayload(encoded: string): Promise<ProviderPayload> {
 	const blankLine = Object.fromEntries(Object.keys(emptyLine()).map((k) => [k, ''])) as ServiceLine;
 	const visit = { ...emptyVisit(), ...parsed.visit };
 	return {
-		v: 1,
+		v: 2,
 		provider: { ...emptyProvider(), ...parsed.provider },
+		patient: { ...emptyPatient(), ...parsed.patient },
 		visit: {
 			...visit,
 			diagnoses: visit.diagnoses.length ? visit.diagnoses : [''],
@@ -150,10 +153,19 @@ export async function decodePayload(encoded: string): Promise<ProviderPayload> {
 	};
 }
 
-function isPayload(x: unknown): x is ProviderPayload {
+function isPayload(x: unknown): x is ClaimPayload {
 	if (typeof x !== 'object' || x === null) return false;
 	const p = x as Record<string, unknown>;
-	return p.v === 1 && typeof p.provider === 'object' && typeof p.visit === 'object';
+	return (
+		p.v === 2 && typeof p.provider === 'object' && typeof p.visit === 'object' && typeof p.patient === 'object'
+	);
+}
+
+// Without a server, the patient's phone proves acceptance by showing a code derived from the exact payload they reviewed.
+export async function acceptanceCode(encoded: string): Promise<string> {
+	const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(encoded)));
+	const n = ((digest[0] << 24) | (digest[1] << 16) | (digest[2] << 8) | digest[3]) >>> 0;
+	return String(n % 10000).padStart(4, '0');
 }
 
 // NPI check digit is Luhn over "80840" + first 9 digits (CMS NPI standard).

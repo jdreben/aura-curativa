@@ -48,14 +48,13 @@ async function press(locator, wait = 700) {
 	});
 	await sleep(wait);
 	await locator.click();
-	await locator.evaluate((el) => (el.style.outline = '')).catch(() => {});
+	// The clicked element often unmounts (e.g. Acepto); don't wait the default 30s for it.
+	await locator.evaluate((el) => (el.style.outline = ''), null, { timeout: 300 }).catch(() => {});
 }
 
-async function glide(page, px, steps = 30, stepMs = 40) {
-	for (let i = 0; i < steps; i++) {
-		await page.mouse.wheel(0, px / steps);
-		await sleep(stepMs);
-	}
+async function glide(page, px, ms = 1200) {
+	await page.evaluate((top) => window.scrollBy({ top, behavior: 'smooth' }), px);
+	await sleep(ms);
 }
 
 const browser = await chromium.launch();
@@ -66,63 +65,79 @@ const desk = await browser.newContext({
 	recordVideo: { dir: join(RAW, '1'), size: { width: 1280, height: 720 } }
 });
 const p1 = await desk.newPage();
+const t0 = Date.now();
 await p1.goto(BASE);
 await caption(p1, 'Many PR providers don’t take insurance. Patients pay — and rarely get reimbursed.');
-await sleep(3500);
-await caption(p1, 'Healing Aura: the doctor and patient finish the Triple-S claim together.');
+await sleep(3000);
+await caption(p1, 'Healing Aura: the provider prepares the Triple-S claim, the patient just reviews it.');
 await sleep(3000);
 await press(p1.getByRole('link', { name: 'Soy proveedor' }));
 await p1.waitForURL('**/proveedor');
-await caption(p1, 'The provider fills in their part once: NPI, license, ICD-10, CPT, amount paid.');
-await sleep(1200);
-await press(p1.getByRole('button', { name: 'Datos de ejemplo' }));
-await sleep(1200);
-await glide(p1, 900, 45, 50);
-await caption(p1, 'Validation catches what gets claims returned: bad NPI, bad codes, missing license.');
+await caption(p1, 'Patient details come straight from the practice’s intake records (simulated here).');
+await sleep(1500);
+const picker = p1.getByRole('combobox', { name: 'Importar del expediente' });
+await picker.evaluate((el) => {
+	el.style.outline = '4px solid #f59e0b';
+	el.style.outlineOffset = '3px';
+});
+await sleep(700);
+await picker.selectOption('HA-0042');
+await picker.evaluate((el) => (el.style.outline = ''));
 await sleep(2500);
-await glide(p1, 700, 35, 50);
-const gen = p1.getByRole('button', { name: /Generar código QR/ });
-await press(gen);
+await caption(p1, 'Provider info, ICD-10 diagnoses and CPT services, with validation that catches rejections.');
+await press(p1.getByRole('button', { name: 'Datos de ejemplo' }));
+await sleep(800);
+await glide(p1, 1400, 1800);
+await glide(p1, 900);
+await press(p1.getByRole('button', { name: /Generar código QR/ }));
 await p1.getByAltText('Código QR para el paciente').scrollIntoViewIfNeeded();
-await caption(p1, 'Everything travels inside the QR code. No server, no database.');
+await caption(p1, 'The whole claim travels inside the QR code. No server, no database.');
 await sleep(4000);
 const link = await p1.getByRole('link', { name: 'Abrir como paciente' }).getAttribute('href');
-await desk.close();
+const cut1 = (Date.now() - t0) / 1000;
 
-// Segment 2: patient on a phone.
+// Segment 2: patient reviews on a phone.
 const phone = await browser.newContext({
 	...devices['iPhone 13'],
 	recordVideo: { dir: join(RAW, '2'), size: { width: 390, height: 664 } }
 });
 const p2 = await phone.newPage();
 await p2.goto(link);
-await caption(p2, 'Patient scans the QR and sees their visit.');
+await caption(p2, 'The patient scans and sees the completed claim. Nothing to type.');
 await sleep(3500);
-await glide(p2, 500, 25, 50);
-await press(p2.getByRole('button', { name: 'Preparar paquete de reembolso' }));
-await caption(p2, 'It won’t build an incomplete claim.');
-await p2.getByText('Antes de continuar, corrija:').scrollIntoViewIfNeeded();
-await sleep(3000);
-await press(p2.getByRole('button', { name: 'Datos de ejemplo' }));
-await caption(p2, 'They add only what they know: name, contract number, address.');
-await sleep(1500);
-await glide(p2, 1600, 60, 45);
-await sleep(800);
+await glide(p2, 700);
+await sleep(1200);
+await glide(p2, 700);
+await caption(p2, 'They certify it’s correct and accept.');
+await press(p2.getByRole('checkbox'));
+await sleep(600);
+await press(p2.getByRole('button', { name: 'Acepto' }));
+const code = (await p2.getByLabel('Código de aceptación').textContent()).trim();
+await caption(p2, 'Their phone shows a code tied to this exact version of the claim.');
+await sleep(4000);
+await phone.close();
+
+// Back on the provider's screen: idle time while the phone segment ran gets cut.
+const cut2 = (Date.now() - t0) / 1000;
+await caption(p1, 'The provider enters the code. That unlocks printing.');
+const codeInput = p1.getByRole('textbox', { name: 'Código de aceptación' });
+await codeInput.scrollIntoViewIfNeeded();
+await sleep(1200);
+await codeInput.pressSequentially(code, { delay: 250 });
+await sleep(1200);
+await press(p1.getByRole('button', { name: 'Preparar paquete para imprimir' }));
+await caption(p1, 'Print. Patient signs section D; provider signs and stamps.');
 const [download] = await Promise.all([
-	p2.waitForEvent('download', { timeout: 30000 }).catch(() => null),
+	p1.waitForEvent('download', { timeout: 30000 }),
 	(async () => {
-		await press(p2.getByRole('button', { name: 'Preparar paquete de reembolso' }));
-		await p2.getByText('Su paquete está listo').scrollIntoViewIfNeeded();
-		await caption(p2, 'The PDF is built on the phone. Nothing leaves the device.');
-		await sleep(3500);
-		await press(p2.getByRole('link', { name: 'Descargar PDF' }));
+		await sleep(2500);
+		await press(p1.getByRole('link', { name: 'Descargar PDF' }));
 	})()
 ]);
-await sleep(1000);
-if (!download) throw new Error('packet download never fired');
 const pdfPath = join(OUT, 'packet.pdf');
 await download.saveAs(pdfPath);
-await phone.close();
+await sleep(1500);
+await desk.close();
 
 // Segment 3: the generated packet itself.
 execFileSync('pdftoppm', ['-png', '-r', '110', pdfPath, join(OUT, 'page')], { stdio: 'ignore' });
@@ -146,7 +161,7 @@ for (const [file, text] of show) {
 	);
 	await caption(p3, text);
 	await sleep(1500);
-	await glide(p3, 700, 70, 55);
+	await glide(p3, 700);
 	await sleep(1200);
 }
 await p3.setContent(
@@ -172,7 +187,8 @@ execFileSync(
 		'-i', seg('2'),
 		'-i', seg('3'),
 		'-filter_complex',
-		`[0:v]${fit}[a];[1:v]${fit}[b];[2:v]${fit}[c];[a][b][c]concat=n=3:v=1:a=0[v]`,
+		`[0:v]split[d1][d2];[d1]trim=0:${cut1},setpts=PTS-STARTPTS,${fit}[a];[1:v]${fit}[b];` +
+			`[d2]trim=start=${cut2},setpts=PTS-STARTPTS,${fit}[c];[2:v]${fit}[e];[a][b][c][e]concat=n=4:v=1:a=0[v]`,
 		'-map', '[v]',
 		'-c:v', 'libx264',
 		'-pix_fmt', 'yuv420p',

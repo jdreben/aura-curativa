@@ -45,21 +45,74 @@ export const demoVisit = (): Visit => {
 	};
 };
 
-export const demoPatient = (): Patient => ({
-	lastNamePaternal: 'Ortiz',
-	lastNameMaternal: 'Santiago',
-	firstName: 'Carmen',
-	middleInitial: 'L',
-	address1: 'Urb. Villa Prades, Calle 3 #45',
-	address2: '',
-	city: 'San Juan',
-	state: 'PR',
-	zip: '00924',
-	contractNumber: 'ZUA123456789',
-	phone: '(787) 555-0199',
-	altPhone: '',
-	groupNumber: '0001234',
-	groupName: 'Empresa Ejemplo, Inc.',
-	hasOtherCoverage: false,
-	medicareEligible: false
-});
+export type IntakeRecord = { id: string; label: string; patient: Patient };
+
+// Simulated practice records: stands in for the intake data a real EHR/practice system already holds.
+export const demoPatients = (): IntakeRecord[] => [
+	{
+		id: 'HA-0042',
+		label: 'Carmen L. Ortiz Santiago',
+		patient: {
+			lastNamePaternal: 'Ortiz',
+			lastNameMaternal: 'Santiago',
+			firstName: 'Carmen',
+			middleInitial: 'L',
+			address1: 'Urb. Villa Prades, Calle 3 #45',
+			address2: '',
+			city: 'San Juan',
+			state: 'PR',
+			zip: '00924',
+			contractNumber: 'ZUA123456789',
+			phone: '(787) 555-0199',
+			altPhone: '',
+			groupNumber: '0001234',
+			groupName: 'Empresa Ejemplo, Inc.',
+			hasOtherCoverage: false,
+			medicareEligible: false
+		}
+	},
+	{
+		id: 'HA-0057',
+		label: 'José A. Rivera Medina',
+		patient: {
+			lastNamePaternal: 'Rivera',
+			lastNameMaternal: 'Medina',
+			firstName: 'José',
+			middleInitial: 'A',
+			address1: 'Calle Ponce de León 210, Apt 4B',
+			address2: '',
+			city: 'Ponce',
+			state: 'PR',
+			zip: '00730',
+			contractNumber: 'ZUB987654321',
+			phone: '(787) 555-0123',
+			altPhone: '(939) 555-0177',
+			groupNumber: '0005678',
+			groupName: 'Cooperativa Ejemplo',
+			hasOtherCoverage: false,
+			medicareEligible: false
+		}
+	},
+	{
+		id: 'HA-0063',
+		label: 'Ana M. Torres Vélez',
+		patient: {
+			lastNamePaternal: 'Torres',
+			lastNameMaternal: 'Vélez',
+			firstName: 'Ana',
+			middleInitial: 'M',
+			address1: 'Bo. Mameyes, Carr. 191 Km 2.1',
+			address2: '',
+			city: 'Río Grande',
+			state: 'PR',
+			zip: '00745',
+			contractNumber: 'ZUA555000111',
+			phone: '(787) 555-0150',
+			altPhone: '',
+			groupNumber: '0009012',
+			groupName: 'Municipio Ejemplo',
+			hasOtherCoverage: true,
+			medicareEligible: false
+		}
+	}
+];

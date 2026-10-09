@@ -2,9 +2,9 @@
 
 **Short description (2–3 sentences):**
 Patients in Puerto Rico who see providers outside their insurance network rarely get reimbursed. The
-Triple-S claim form is confusing and gets returned for missing details. Healing Aura splits the form:
-the provider fills in their part and shows a QR code, the patient finishes on their phone, and out comes
-a complete, ready-to-mail reimbursement packet. No patient data is ever stored.
+Triple-S claim form is confusing and gets returned for missing details. Healing Aura lets the
+provider's office prepare the complete claim from data it already has; the patient scans a QR code,
+reviews and accepts it on their phone, and the office prints a ready-to-sign packet. No data is ever stored.
 
 ## Inspiration
 
@@ -17,15 +17,19 @@ license number or a receipt that says "balance pending."
 
 ## What it does
 
-- **Provider** enters their info once, plus the visit's diagnoses and services. They get a QR code.
-- **Patient** scans it, sees a summary of the visit, and fills in only their own details: name, Triple-S
-  contract number, address.
-- The app builds a PDF packet in the browser:
+- **Provider** imports the patient from intake records (simulated with synthetic patients), adds the
+  visit's diagnoses and services, and generates a QR code.
+- **Patient** scans it and sees the fully completed claim: their details, the visit, every charge,
+  and the filled PDF if they want it. They check the certification and tap *Acepto*. Nothing to type.
+- The patient's phone shows a **4-digit acceptance code** computed from that exact version of the claim.
+  The provider types it in, and that unlocks printing. If the office edits anything afterward, the code
+  stops matching and a new QR is required.
+- The office prints a packet built in the browser:
   - the **official Triple-S reimbursement form**, filled in field by field
   - the **itemized receipt** (*factura detallada*) Triple-S requires, with NPI, EIN, license, diagnosis,
     and amounts billed and paid on every line
-  - a **cover sheet** with the mailing address and a checklist (sign section D, provider stamp, one
-    form per family member, and so on)
+  - a **cover sheet** with the mailing address and a checklist
+- The patient signs section D, the provider signs and stamps, and it goes in the mail.
 - Validation catches the mistakes that get claims returned: bad NPI check digit, malformed ICD-10 and
   CPT codes, missing EIN or license.
 
@@ -34,7 +38,7 @@ license number or a receipt that says "balance pending."
 - SvelteKit (Svelte 5), deployed as a fully static site.
 - `pdf-lib` fills the real AcroForm fields in Triple-S's public PDF and draws the receipt and cover
   sheet.
-- Provider data is JSON, deflate-compressed and base64url-encoded into the **URL fragment** of the QR
+- The claim is JSON, deflate-compressed and base64url-encoded into the **URL fragment** of the QR
   link. Browsers never send the fragment to a server, so the server never sees claim data.
 - Spanish-first UI, mobile-first patient flow.
 
@@ -45,6 +49,8 @@ license number or a receipt that says "balance pending."
 - The contract-number box only holds one character: the third letter of the "ZU_" prefix. The rest of
   the number runs past it unboxed.
 - Keeping the QR code scannable: compressing the payload keeps it under ~1 KB for six service lines.
+- Confirming patient acceptance without a server. The answer was a short code derived from a hash of
+  the exact claim payload, shown on the patient's phone and typed by the provider.
 - Being honest about limits. The form needs a wet signature and the provider's *sello timbrado*, so the
   app prepares the packet and doesn't pretend it can submit it electronically.
 

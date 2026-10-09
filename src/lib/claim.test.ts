@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { decodePayload, encodePayload, isValidCpt, isValidIcd10, isValidNpi, providerProblems } from './claim';
-import { demoProvider, demoVisit } from './demo';
+import { acceptanceCode, decodePayload, encodePayload, isValidCpt, isValidIcd10, isValidNpi, providerProblems } from './claim';
+import { demoPatients, demoProvider, demoVisit } from './demo';
 
 describe('payload', () => {
 	it('round-trips through the QR encoding', async () => {
-		const payload = { v: 1 as const, provider: demoProvider(), visit: demoVisit() };
+		const payload = { v: 2 as const, provider: demoProvider(), visit: demoVisit(), patient: demoPatients()[0].patient };
 		const encoded = await encodePayload(payload);
 		expect(encoded).toMatch(/^[A-Za-z0-9_-]+$/);
 		expect(await decodePayload(encoded)).toEqual(payload);
@@ -41,7 +41,18 @@ describe('payload compaction', () => {
 		const visit = demoVisit();
 		visit.preauthNumber = '';
 		visit.lines[0].modifier = '';
-		const payload = { v: 1 as const, provider: { ...demoProvider(), ein: '' }, visit };
+		const patient = { ...demoPatients()[0].patient, altPhone: '', medicareEligible: true };
+		const payload = { v: 2 as const, provider: { ...demoProvider(), ein: '' }, visit, patient };
 		expect(await decodePayload(await encodePayload(payload))).toEqual(payload);
+	});
+});
+
+describe('acceptance code', () => {
+	it('is 4 digits and changes when the claim changes', async () => {
+		const base = { v: 2 as const, provider: demoProvider(), visit: demoVisit(), patient: demoPatients()[0].patient };
+		const a = await acceptanceCode(await encodePayload(base));
+		const b = await acceptanceCode(await encodePayload({ ...base, patient: { ...base.patient, zip: '00901' } }));
+		expect(a).toMatch(/^\d{4}$/);
+		expect(a).not.toBe(b);
 	});
 });
