@@ -5,6 +5,7 @@
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+	const DEVPOST = 'https://caribbean-ai-summit-hackathon.devpost.com/';
 </script>
 
 <svelte:head>
@@ -31,6 +32,11 @@
 	</main>
 
 	<footer class="border-t border-slate-200 py-6 text-center text-xs text-slate-500 print:hidden">
-		Todo se procesa en su dispositivo. No guardamos datos. Prototipo — no es asesoría médica ni legal.
+		<p>
+			Proyecto del
+			<a href={DEVPOST} target="_blank" rel="noopener" class="font-medium text-teal-800 underline">Caribbean AI Summit Healthcare Hackathon 2026</a>
+			· Puerto Rico
+		</p>
+		<p class="mt-1">Todo se procesa en su dispositivo. No guardamos datos. Prototipo — no es asesoría médica ni legal.</p>
 	</footer>
 </div>
