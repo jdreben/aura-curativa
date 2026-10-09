@@ -15,10 +15,14 @@
 <div class="flex min-h-screen flex-col bg-gradient-to-b from-teal-50 to-white text-slate-900">
 	<header class="border-b border-teal-100 bg-white/70 backdrop-blur print:hidden">
 		<div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-			<a href={resolve('/')} class="flex items-center gap-2 font-semibold text-teal-800">
+			<a href={resolve('/')} class="flex shrink-0 items-center gap-2 font-semibold text-teal-800">
 				<span class="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-teal-400 to-violet-400"></span>
 				Healing Aura
 			</a>
+			<nav class="flex gap-3 whitespace-nowrap text-xs font-medium sm:gap-4 sm:text-sm">
+				<a href={resolve('/')} class="text-teal-800 hover:underline">¿Me reembolsan?</a>
+				<a href={resolve('/comparar')} class="text-teal-800 hover:underline">Comparar planes</a>
+			</nav>
 		</div>
 	</header>
 

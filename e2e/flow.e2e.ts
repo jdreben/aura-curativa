@@ -237,6 +237,24 @@ test('First Medical asks only for the other plan and the kind of accident', asyn
 	await expect(page.getByRole('radio', { name: 'Accidente de automóvil' })).toBeVisible();
 });
 
+test('plan comparison: picks the same tier at the other insurer, with premiums by age', async ({ page }) => {
+	await page.goto('/');
+	await page.getByRole('link', { name: 'Comparar planes' }).click();
+	await expect(page.getByText('Escoja una aseguradora y un plan para ver la comparación.')).toBeVisible();
+	await page.getByLabel('Aseguradora').selectOption('triple-s');
+	await page.getByLabel('Plan').selectOption('pocket-oro');
+	await expect(page.getByRole('columnheader', { name: /Directo Gold Plus/ })).toBeVisible();
+	await expect(page.getByRole('columnheader', { name: /Directo Silver/ })).toHaveCount(0);
+	await expect(page.getByText('$208.95')).toBeVisible();
+	await expect(page.getByText('Aún no publicada para 2027')).toBeVisible();
+	await page.getByLabel('Edad').fill('64');
+	await expect(page.getByText('$490.50')).toBeVisible();
+
+	await page.goto('/comparar?plan=directo-bronce');
+	await expect(page.getByText('First Medical no vende un plan Bronce en 2027.', { exact: false })).toBeVisible();
+	await expect(page.getByRole('columnheader', { name: /Directo Silver Plus/ })).toBeVisible();
+});
+
 test('claim page without a valid plan says so', async ({ page }) => {
 	await page.goto('/reclamar?plan=nope&servicio=especialista');
 	await expect(page.getByText('No encontramos un reembolso que preparar.')).toBeVisible();

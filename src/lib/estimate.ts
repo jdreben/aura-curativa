@@ -80,11 +80,11 @@ type IndividualPlan = 'directo-bronce' | 'directo-plata' | 'pocket-plata' | 'poc
 
 // In-network cost-sharing from each 2027 póliza; Pocket and Uno show "preferred network / Blue Select".
 const IN_NETWORK: Record<IndividualPlan, Partial<Record<ServiceId, string>>> = {
-	'directo-bronce': { pcp: '$10', especialista: '$25', subespecialista: '$30', 'salud-mental': '$25', laboratorio: '60% coaseguro', radiologia: '60% coaseguro', quiropractico: '$15 la visita', acupuntura: '$15' },
-	'directo-plata': { pcp: '$0', especialista: '$15', subespecialista: '$25', 'salud-mental': '$15', laboratorio: '35% coaseguro', radiologia: '40% coaseguro', quiropractico: '$15', acupuntura: '$15' },
-	'pocket-plata': { pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro', radiologia: '40% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15' },
-	'pocket-oro': { pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro ($0 en SALUS)', radiologia: '30% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15' },
-	'uno-plata': { pcp: '$0 en Blue One / $15', especialista: '$0 en Blue One / $25', subespecialista: '$10 en Blue One / $30', 'salud-mental': '$0 en Blue One / $25', laboratorio: '$0 en Blue One / 40%', radiologia: '$0 en Blue One / 40%', quiropractico: '$0 en Blue One / $25', acupuntura: '$15' }
+	'directo-bronce': { 'terapia-fisica': '60% coaseguro', cirugia: '60% coaseguro (facilidad)', pcp: '$10', especialista: '$25', subespecialista: '$30', 'salud-mental': '$25', laboratorio: '60% coaseguro', radiologia: '60% coaseguro', quiropractico: '$15 la visita', acupuntura: '$15' },
+	'directo-plata': { 'terapia-fisica': '$15', cirugia: '$200 (facilidad)', pcp: '$0', especialista: '$15', subespecialista: '$25', 'salud-mental': '$15', laboratorio: '35% coaseguro', radiologia: '40% coaseguro', quiropractico: '$15', acupuntura: '$15' },
+	'pocket-plata': { 'terapia-fisica': '$10 en Red Pocket / $18', cirugia: '50% coaseguro (facilidad)', pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro', radiologia: '40% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15' },
+	'pocket-oro': { 'terapia-fisica': '$10 en Red Pocket / $18', cirugia: '45% coaseguro (facilidad)', pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro ($0 en SALUS)', radiologia: '30% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15' },
+	'uno-plata': { 'terapia-fisica': '$10 en Blue One / $20', cirugia: '$50 en Blue One / $300 (facilidad)', pcp: '$0 en Blue One / $15', especialista: '$0 en Blue One / $25', subespecialista: '$10 en Blue One / $30', 'salud-mental': '$0 en Blue One / $25', laboratorio: '$0 en Blue One / 40%', radiologia: '$0 en Blue One / 40%', quiropractico: '$0 en Blue One / $25', acupuntura: '$15' }
 };
 
 const INDIVIDUAL: PatientPlanId[] = ['directo-bronce', 'directo-plata', 'pocket-plata', 'pocket-oro', 'uno-plata'];
@@ -101,6 +101,12 @@ const FM_COST: Record<FirstMedicalPlan, Partial<Record<ServiceId, string>>> = {
 const FM_PAVIA_FREE: ServiceId[] = ['pcp', 'especialista', 'laboratorio', 'radiologia'];
 // MRI, CT, sonograms and other "pruebas especializadas" (line K): 20% at Metro Pavía.
 const FM_SPECIALIZED: Record<FirstMedicalPlan, string> = { 'fm-gold-plus': '40%', 'fm-gold': '45%', 'fm-silver-plus': '60%', 'fm-silver': '75%' };
+
+// In-network cost-sharing for the comparison table; [Metro Pavía] / SALUS tiers are left to the policy.
+export function inNetworkCost(plan: PatientPlanId, service: ServiceId): string | null {
+	if (plan.startsWith('fm-')) return FM_COST[plan as FirstMedicalPlan][service] ?? null;
+	return IN_NETWORK[plan as IndividualPlan]?.[service] ?? null;
+}
 
 export type Insurer = 'triple-s' | 'first-medical';
 

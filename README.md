@@ -53,6 +53,16 @@ accepts on their phone, and the provider prints the packet once the patient's co
 Add `?demo` to the URL (e.g. `/?demo`, then an example and *¡Empecemos!*, or `/proveedor?demo`) to fill
 every form with synthetic data. The *Datos de ejemplo* button on the claim wizard and the provider page does the same.
 
+## Plan comparison (`/comparar`)
+
+Pick an insurer and plan; the table puts it next to the other insurer's plans of the same metal tier
+(or the nearest tier), with the monthly premium for a chosen age on top and each service's
+out-of-network answer from the same estimator the claim wizard uses.
+
+Update once a year in `src/lib/compare.ts`: premiums (OCS rate filings, `Tarifas.pdf`), deductible,
+out-of-pocket maximum, hospital and ER copays, and sources. Triple-S had not published 2027 premiums
+as of 2026-10-09, so its premium cells say so until `premiums` is filled in.
+
 ## Privacy model
 
 There is no backend and no database.
