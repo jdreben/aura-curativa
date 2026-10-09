@@ -257,6 +257,30 @@ test('plan comparison: picks the same tier at the other insurer, with premiums b
 	await expect(page.getByRole('columnheader', { name: /Directo Silver Plus/ })).toBeVisible();
 });
 
+test('going back in the claim wizard: back button, browser back and the progress bar', async ({ page }) => {
+	await page.goto('/reclamar?plan=pocket-plata&servicio=acupuntura&demo=');
+	await expect(page.getByRole('button', { name: '← Paso anterior' })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	await expect(page.getByText('Sobre el servicio')).toBeVisible();
+
+	await page.goBack();
+	await expect(page.getByText('¿Ya recibió el servicio?')).toBeVisible();
+	await page.goForward();
+	await expect(page.getByText('Sobre el servicio')).toBeVisible();
+
+	for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuar' }).click();
+	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
+	await expect(page.getByText('Revise su formulario')).toBeVisible();
+	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
+	await expect(page.getByText('Envíelo a su proveedor')).toBeVisible();
+
+	await page.getByRole('button', { name: '← Paso anterior' }).click();
+	await expect(page.getByText('Revise su formulario')).toBeVisible();
+	await page.getByRole('button', { name: 'Volver a Detalles' }).click();
+	await expect(page.getByText('Sobre el servicio')).toBeVisible();
+	await expect(page.getByRole('textbox', { name: 'Cuánto pagó ($)*' })).toHaveValue('90');
+});
+
 test('claim page without a valid plan says so', async ({ page }) => {
 	await page.goto('/reclamar?plan=nope&servicio=especialista');
 	await expect(page.getByText('No encontramos un reembolso que preparar.')).toBeVisible();

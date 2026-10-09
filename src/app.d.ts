@@ -5,7 +5,10 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			// The claim wizard's step, so the browser back button moves between steps.
+			step?: string;
+		}
 		// interface Platform {}
 	}
 }

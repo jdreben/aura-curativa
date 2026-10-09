@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { asset, resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { pushState } from '$app/navigation';
 	import Field from '#lib/components/Field.svelte';
 	import PatientFields from '#lib/components/PatientFields.svelte';
 	import OtherCoverageFields from '#lib/components/OtherCoverageFields.svelte';
@@ -130,15 +131,40 @@
 			generate();
 			return;
 		}
-		step = flow[stepIndex + 1];
+		go(flow[stepIndex + 1]);
+	}
+
+	// Each step is a history entry, so the browser back button and swipe-back move between steps.
+	function go(s: Step) {
+		attempted = false;
+		editing = false;
+		step = s;
+		pushState('', { step: s });
 		scrollTo({ top: 0, behavior: 'smooth' });
 	}
 
 	function back() {
-		attempted = false;
-		editing = false;
-		if (stepIndex > 0) step = flow[stepIndex - 1];
+		if (stepIndex > 0) history.back();
 	}
+
+	$effect(() => {
+		const s = page.state.step as Step | undefined;
+		const target = s && flow.includes(s) ? s : 'received';
+		if (target !== step) {
+			attempted = false;
+			editing = false;
+			step = target;
+		}
+	});
+
+	const STEP_LABELS: Record<Step, string> = {
+		received: 'Servicio',
+		details: 'Detalles',
+		questions: 'Preguntas',
+		you: 'Sus datos',
+		review: 'Revisar',
+		send: 'Enviar'
+	};
 
 	// Synthetic data so a demo can click straight through every step; ?demo fills it on load.
 	function fillDemo() {
@@ -155,16 +181,15 @@
 
 	function choose(r: boolean) {
 		received = r;
-		step = r ? 'details' : 'questions';
+		go(r ? 'details' : 'questions');
 	}
 
 	async function generate() {
 		if (!serviceId) return;
 		if (pdf.status === 'ready') URL.revokeObjectURL(pdf.url);
 		pdf = { status: 'loading' };
-		step = 'review';
+		if (step !== 'review') go('review');
 		editing = false;
-		scrollTo({ top: 0, behavior: 'smooth' });
 		try {
 			const file = insurer === 'triple-s' ? 'forms/triple-s-reembolso.pdf' : 'forms/first-medical-reembolso.pdf';
 			const res = await fetch(asset(file));
@@ -273,9 +298,22 @@
 
 		<ol class="mt-5 flex gap-1" aria-label="Progreso">
 			{#each flow as s, i (s)}
-				<li class="h-1.5 flex-1 rounded-full {i <= stepIndex ? 'bg-teal-600' : 'bg-slate-200'}"></li>
+				<li class="flex-1">
+					{#if i < stepIndex}
+						<button type="button" onclick={() => go(s)} class="group block w-full text-left" aria-label="Volver a {STEP_LABELS[s]}">
+							<span class="block h-1.5 rounded-full bg-teal-600 group-hover:bg-teal-800"></span>
+							<span class="mt-1 block truncate text-[11px] text-teal-700 group-hover:underline sm:text-xs">{STEP_LABELS[s]}</span>
+						</button>
+					{:else}
+						<span class="block h-1.5 rounded-full {i === stepIndex ? 'bg-teal-600' : 'bg-slate-200'}"></span>
+						<span class="mt-1 block truncate text-[11px] sm:text-xs {i === stepIndex ? 'font-semibold text-slate-900' : 'text-slate-400'}" aria-current={i === stepIndex ? 'step' : undefined}>{STEP_LABELS[s]}</span>
+					{/if}
+				</li>
 			{/each}
 		</ol>
+		{#if stepIndex > 0}
+			<button type="button" onclick={back} class="mt-3 text-sm font-medium text-teal-700 hover:underline">← Paso anterior</button>
+		{/if}
 
 		<section class="mt-6 rounded-xl border border-slate-200 bg-white p-6">
 			{#if step === 'received'}
@@ -405,7 +443,7 @@
 					</a>
 					<p class="mt-6 font-semibold text-slate-900">¿Todo se ve correcto?</p>
 					<div class="mt-3 grid grid-cols-2 gap-3">
-						<button type="button" class={primary} onclick={() => (step = 'send')}>Sí, todo correcto</button>
+						<button type="button" class={primary} onclick={() => go('send')}>Sí, todo correcto</button>
 						<button type="button" class={secondary} onclick={() => (editing = true)}>Corregir algo</button>
 					</div>
 				{:else if editing}
