@@ -26,6 +26,9 @@ export function preauthWarning(insurer: Insurer, service: ServiceId): string | n
 	if (service === 'quiropractico' || service === 'terapia-fisica') {
 		return 'First Medical requiere autorización previa del plan para manipulaciones quiroprácticas y terapias. Pídala antes de la cita.';
 	}
+	if (service === 'espejuelos') {
+		return 'First Medical requiere autorización previa del plan para los espejuelos. Pídala antes de comprarlos.';
+	}
 	if (service === 'cirugia') {
 		return 'Si la cirugía usa un hospital o facilidad, First Medical requiere aprobación por escrito al menos 72 horas antes.';
 	}

@@ -89,6 +89,8 @@ const FM_COST: Record<FirstMedicalPlan, Partial<Record<ServiceId, string>>> = {
 	'fm-silver': { pcp: '$10', especialista: '$20', subespecialista: '$30', 'salud-mental': '$20', laboratorio: '60%', radiologia: '60%', 'terapia-fisica': '$18', quiropractico: '$20', cirugia: '75%' }
 };
 const FM_PAVIA_FREE: ServiceId[] = ['pcp', 'especialista', 'laboratorio', 'radiologia'];
+// MRI, CT, sonograms and other "pruebas especializadas" (line K): 20% at Metro Pavía.
+const FM_SPECIALIZED: Record<FirstMedicalPlan, string> = { 'fm-gold-plus': '40%', 'fm-gold': '45%', 'fm-silver-plus': '60%', 'fm-silver': '75%' };
 
 export type Insurer = 'triple-s' | 'first-medical';
 
@@ -235,15 +237,18 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 		}
 		if (service === 'espejuelos') {
 			return {
-				verdict: 'unknown',
-				headline: 'Verifique su beneficio de visión',
-				benefit: '',
+				verdict: 'reimbursable',
+				headline: 'Sí: First Medical reembolsa fuera de la red',
+				benefit: 'Un par de espejuelos al año: tarifa de la red menos su copago ($15)',
 				back: null,
 				owe: null,
-				explanation: ['Aún no hemos verificado el beneficio de espejuelos de First Medical Directo 2027.'],
-				alternatives: [],
-				route: null,
-				conditions: []
+				explanation: [
+					'Su póliza cubre un par de espejuelos para adultos por año contrato, con $15 de copago, a través de iVision International. Fuera de la red le reembolsan la tarifa contratada menos el copago. Si la óptica cobró más, usted paga la diferencia.',
+					'Llame al 1-888-318-0274 con el código del servicio para saber cuánto le reembolsan.'
+				],
+				alternatives: ['En una óptica de iVision International el examen de la vista es $0 y los espejuelos, $15.'],
+				route: 'routine',
+				conditions: ['Un par por año contrato.']
 			};
 		}
 		return {
@@ -254,14 +259,26 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 			owe: null,
 			explanation: [
 				`Su plan es de libre selección. Le reembolsa la tarifa más alta que First Medical paga en su red a un proveedor de la misma especialidad, menos su ${cost ? `copago o coaseguro (${cost})` : 'copago o coaseguro'}. Si el proveedor cobró más, usted paga la diferencia.`,
-				'First Medical no publica sus tarifas. Llame al 1-888-318-0274 (7 días, 8am–12am) con el código del servicio: por ley le tienen que dar el estimado.',
-				'Si ninguna especialidad igual está en la red, le reembolsan el 100% de lo pagado menos su copago.'
+				'La tarifa contratada (lo que First Medical le paga a sus proveedores) no aparece en la póliza ni en el folleto: las tarifas del folleto son la prima mensual del plan. Llame al 1-888-318-0274 (7 días, 8am–12am) con el código del servicio (CPT): por ley le tienen que decir cuánto le reembolsan.',
+				'Si ninguna especialidad igual está en la red, le reembolsan el 100% de lo pagado menos su copago.',
+				...(service === 'radiologia'
+					? [`El ${cost} es para rayos X. MRI, CT, sonogramas y otras pruebas especializadas tienen ${FM_SPECIALIZED[plan as FirstMedicalPlan]} de coaseguro y la mayoría requiere autorización previa.`]
+					: [])
 			],
 			alternatives: FM_PAVIA_FREE.includes(service)
-				? ['En hospitales y clínicas de Metro Pavía este servicio le cuesta $0.']
+				? [
+						service === 'radiologia'
+							? 'En hospitales y clínicas de Metro Pavía los rayos X le cuestan $0 y las pruebas especializadas, 20%.'
+							: 'En hospitales y clínicas de Metro Pavía este servicio le cuesta $0.'
+					]
 				: [],
 			route: 'routine',
-			conditions: ['Debe ser un servicio cubierto y médicamente necesario.']
+			conditions: [
+				'Debe ser un servicio cubierto y médicamente necesario.',
+				...(service === 'terapia-fisica' || service === 'quiropractico'
+					? ['Hasta 20 terapias y manipulaciones quiroprácticas combinadas por año contrato.']
+					: [])
+			]
 		};
 	}
 

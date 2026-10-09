@@ -28,9 +28,12 @@ Medical Card, "ambiente de LIBRE SELECCIÓN". Metro Pavía facilities are a chea
 - **No network provider of that specialty:** 100% of what was paid, minus copay (p35).
 - **Patient pays the gap** above the allowed amount. Balance-billing protection covers emergencies and
   inadvertent out-of-network charges only (p37, p51).
-- **Fee schedule not published.** Members can call **1-888-318-0274** (7 days, 8am–12am); the plan must give
-  the allowed amount for a specific CPT code on request (p36).
-- The lab example on p36 applies coinsurance to the billed amount, which contradicts the rule above.
+- **Contracted rates are not in any of the documents.** The cubierta gives the method and examples only.
+  Members can call **1-888-318-0274** (7 days, 8am–12am). The plan must give the allowed amount for a
+  specific CPT code on request (p36). The "tarifas" in the flyer are monthly premiums, not provider rates.
+- The lab example on p36 applies coinsurance to the billed amount, which contradicts the rule above. It also
+  says Gold Plus lab coinsurance is 40%, but the Gold Plus table says 35%.
+- Amounts paid above the contracted rate do not count toward the out-of-pocket maximum (p25, MOOP section).
 
 ## Cost-sharing (2027; [Metro Pavía] where different)
 
@@ -44,10 +47,15 @@ Medical Card, "ambiente de LIBRE SELECCIÓN". Metro Pavía facilities are a chea
 | Psychologist / psychiatrist | $15 | $18 | $18 | $20 |
 | Chiropractor visit / manipulation | $15 / $15 | $18 / $15 | $18 / $20 | $20 / $20 |
 | Lab and X-ray | 35% [0%] | 45% [0%] | 55% [0%] | 60% [0%] |
+| MRI, CT, sonograms, other specialized tests | 40% [20%] | 45% [20%] | 60% [20%] | 75% [20%] |
 | Physical therapy | $10 | $12 | $15 | $18 |
+| Adult glasses (1 pair/year, iVision, pre-authorization) | $15 | $15 | $15 | $15 |
 | Outpatient surgery / in-office procedures | 35% | 45% | 65% | 75% |
 | ER | $75 [$50] | $80 [$50] | $100 [$50] | $125 [$60] |
 | Telemedicine (FM eHealth) | $0 | $0 | $0 | $0 |
+
+Physical therapy, rehabilitation and chiropractic manipulations: 20 per year, combined. Manipulations,
+rehabilitation, habilitation and adult glasses require pre-authorization (p99–100, p127).
 
 ## Exclusions that matter for cash-pay providers
 
@@ -73,11 +81,13 @@ non-MD professionals other than audiologists, optometrists, podiatrists, psychol
 |---|---|---|
 | Plans are "PPO" | Not stated; "libre selección" | Document wording |
 | Claim deadline "not found" | 90 days (p52) | 90 days |
-| OON spending doesn't count toward the out-of-pocket max | From the 2025 SBC only | Don't claim for 2027 |
+| OON spending doesn't count toward the out-of-pocket max | Amounts above the contracted rate don't count (p25) | State it for 2027 |
 | OON imaging only if specialty unavailable | From the 2025 SBC only | Don't claim for 2027 |
 | Reimbursement form 22.30_37 (2022) | Website has 23.30_03 (2023) | Link the 2023 form |
 
 ## Premiums (monthly, 2027)
+
+The flyer headline "Tarifa diaria desde $3.09" is the Silver 0–20 premium divided by days in a month.
 
 | Age | Silver | Silver Plus | Gold | Gold Plus |
 |---|---|---|---|---|

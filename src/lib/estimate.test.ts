@@ -35,13 +35,32 @@ describe('estimate', () => {
 		expect(estimate('pocket-oro', 'emergencia', 500)?.verdict).toBe('direct');
 	});
 
-	it('First Medical reimburses out of network but publishes no tariff', () => {
+	it('First Medical reimburses out of network at the contracted rate, which only the phone line quotes', () => {
 		const e = estimate('fm-silver', 'especialista', 150);
 		expect(e?.verdict).toBe('reimbursable');
 		expect(e?.insurer).toBe('first-medical');
 		expect(e?.back).toBeNull();
 		expect(e?.explanation[0]).toContain('$20');
+		expect(e?.explanation[1]).toContain('prima mensual');
 		expect(claimable(e)).toBe(true);
+	});
+
+	it('First Medical covers one pair of adult glasses a year at the network rate minus $15', () => {
+		const e = estimate('fm-gold', 'espejuelos', 200);
+		expect(e?.verdict).toBe('reimbursable');
+		expect(e?.benefit).toContain('$15');
+		expect(claimable(e)).toBe(true);
+	});
+
+	it('First Medical radiology separates X-rays from MRI and other specialized tests', () => {
+		const e = estimate('fm-silver', 'radiologia', 300);
+		expect(e?.explanation.join(' ')).toContain('75%');
+		expect(e?.alternatives[0]).toContain('20%');
+	});
+
+	it('First Medical caps therapy and chiropractic at 20 combined a year', () => {
+		expect(estimate('fm-silver', 'quiropractico', 60)?.conditions.join(' ')).toContain('20');
+		expect(estimate('fm-silver', 'especialista', 60)?.conditions.join(' ')).not.toContain('20');
 	});
 
 	it('First Medical excludes acupuncture', () => {
