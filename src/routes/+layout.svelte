@@ -14,9 +14,9 @@
 
 <div class="flex min-h-screen flex-col bg-gradient-to-b from-teal-50 to-white text-slate-900">
 	<header class="border-b border-teal-100 bg-white/70 backdrop-blur print:hidden">
-		<div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-			<a href={resolve('/')} class="flex shrink-0 items-center gap-2 font-semibold text-teal-800">
-				<span class="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-teal-400 to-violet-400"></span>
+		<div class="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-4">
+			<a href={resolve('/')} class="flex shrink-0 items-center gap-2 text-xl font-bold tracking-tight text-teal-800 sm:gap-3 sm:text-3xl">
+				<span class="inline-block h-5 w-5 rounded-full bg-gradient-to-br from-teal-400 to-violet-400 sm:h-8 sm:w-8"></span>
 				Healing Aura
 			</a>
 			<nav class="flex gap-3 whitespace-nowrap text-xs font-medium sm:gap-4 sm:text-sm">
