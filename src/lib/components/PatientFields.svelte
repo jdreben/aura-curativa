@@ -34,8 +34,8 @@
 		placeholder="ZUA123456789"
 		class="sm:col-span-2"
 	/>
-	<Field label="Número de grupo" bind:value={patient.groupNumber} />
-	<Field label="Nombre del grupo" bind:value={patient.groupName} />
+	<Field label="Número de grupo" bind:value={patient.groupNumber} hint="En la tarjeta del plan (Group Number)." />
+	<Field label="Nombre del grupo" bind:value={patient.groupName} hint="Solo si la tarjeta lo tiene." />
 	<Field label="Dirección postal" bind:value={patient.address1} required class="sm:col-span-2" />
 	<Field label="Dirección 2" bind:value={patient.address2} class="sm:col-span-2" />
 	<Field label="Ciudad / pueblo" bind:value={patient.city} required />

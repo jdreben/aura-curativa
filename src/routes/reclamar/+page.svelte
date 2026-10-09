@@ -352,6 +352,8 @@
 					<Field label="Apellido paterno" bind:value={patient.lastNamePaternal} required autocomplete="family-name" />
 					<Field label="Apellido materno" bind:value={patient.lastNameMaternal} />
 					<Field label="Número de contrato" bind:value={patient.contractNumber} required placeholder={insurer === 'triple-s' ? 'ZUA123456789' : ''} />
+					<Field label="Número de grupo" bind:value={patient.groupNumber} hint="En su tarjeta del plan (Group Number)." />
+					<Field label="Nombre del grupo" bind:value={patient.groupName} hint="Solo si su tarjeta lo tiene. Si no, déjelo en blanco." />
 					<Field label="Dirección postal" bind:value={patient.address1} required autocomplete="address-line1" class="sm:col-span-2" />
 					<Field label="Pueblo" bind:value={patient.city} required autocomplete="address-level2" />
 					<Field label="Código postal" bind:value={patient.zip} required inputmode="numeric" autocomplete="postal-code" />
@@ -378,6 +380,7 @@
 					<dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
 						<dt class="text-slate-500">Nombre</dt><dd>{patientFullName(patient)}</dd>
 						<dt class="text-slate-500">Contrato</dt><dd class="font-mono">{patient.contractNumber}</dd>
+						{#if patient.groupNumber || patient.groupName}<dt class="text-slate-500">Grupo</dt><dd>{[patient.groupNumber, patient.groupName].filter(Boolean).join(' · ')}</dd>{/if}
 						<dt class="text-slate-500">Dirección</dt><dd>{patient.address1}, {patient.city}, {patient.state} {patient.zip}</dd>
 						<dt class="text-slate-500">Teléfono</dt><dd>{patient.phone}</dd>
 						{#if patient.dob}<dt class="text-slate-500">Nacimiento</dt><dd>{isoToForm(patient.dob)}</dd>{/if}
