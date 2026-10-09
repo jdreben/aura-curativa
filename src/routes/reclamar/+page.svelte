@@ -387,7 +387,15 @@
 						{/if}
 						{#if providerName}<dt class="text-slate-500">Proveedor</dt><dd>{providerName}{providerSpecialty ? ` · ${providerSpecialty}` : ''}</dd>{/if}
 					</dl>
-					<a href={pdf.url} target="_blank" rel="noopener" class="mt-4 inline-block text-sm font-medium text-teal-700 underline">
+					<a
+						href={pdf.url}
+						target="_blank"
+						rel="noopener"
+						class="mt-5 flex w-full items-center justify-center gap-3 rounded-xl border-2 border-teal-700 bg-teal-50 px-6 py-4 text-lg font-semibold text-teal-800 shadow-sm hover:bg-teal-100"
+					>
+						<svg aria-hidden="true" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+						</svg>
 						Ver el formulario completo (PDF)
 					</a>
 					<p class="mt-6 font-semibold text-slate-900">¿Todo se ve correcto?</p>
