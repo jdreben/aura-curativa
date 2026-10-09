@@ -46,7 +46,7 @@
 				visit: $state.snapshot(visit)
 			});
 			const link = `${location.origin}${resolve('/paciente')}#${encoded}`;
-			const qr = await QRCode.toDataURL(link, { errorCorrectionLevel: 'L', margin: 1, width: 320 });
+			const qr = await QRCode.toDataURL(link, { errorCorrectionLevel: 'L', margin: 2, scale: 6 });
 			result = { status: 'ready', link, qr };
 		} catch (e) {
 			result = { status: 'error', message: e instanceof Error ? e.message : String(e) };
@@ -185,7 +185,7 @@
 {:else if result.status === 'ready'}
 	<section class="mt-8 rounded-xl border border-teal-200 bg-white p-6 text-center">
 		<h2 class="text-lg font-semibold text-teal-900">Muéstrele este código al paciente</h2>
-		<img src={result.qr} alt="Código QR para el paciente" class="mx-auto mt-4 h-72 w-72" />
+		<img src={result.qr} alt="Código QR para el paciente" class="mx-auto mt-4 w-72 [image-rendering:pixelated]" />
 		<p class="mt-3 text-xs text-slate-500">
 			Los datos van dentro del código. Nada se guardó en un servidor.
 		</p>

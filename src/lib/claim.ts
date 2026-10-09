@@ -124,7 +124,11 @@ async function pipe(bytes: Uint8Array, stream: CompressionStream | Decompression
 
 // Compressed so the QR stays sparse enough to scan from a phone held at arm's length.
 export async function encodePayload(payload: ProviderPayload): Promise<string> {
-	const json = new TextEncoder().encode(JSON.stringify(payload));
+	const compact = {
+		...payload,
+		visit: { ...payload.visit, diagnoses: payload.visit.diagnoses.filter((d) => d.trim()) }
+	};
+	const json = new TextEncoder().encode(JSON.stringify(compact, (_, v) => (v === '' ? undefined : v)));
 	return toBase64Url(await pipe(json, new CompressionStream('deflate-raw')));
 }
 
@@ -132,7 +136,18 @@ export async function decodePayload(encoded: string): Promise<ProviderPayload> {
 	const json = await pipe(fromBase64Url(encoded), new DecompressionStream('deflate-raw'));
 	const parsed: unknown = JSON.parse(new TextDecoder().decode(json));
 	if (!isPayload(parsed)) throw new Error('Formato de enlace no reconocido');
-	return parsed;
+	// Empty strings are dropped when encoding to keep the QR small; restore them here.
+	const blankLine = Object.fromEntries(Object.keys(emptyLine()).map((k) => [k, ''])) as ServiceLine;
+	const visit = { ...emptyVisit(), ...parsed.visit };
+	return {
+		v: 1,
+		provider: { ...emptyProvider(), ...parsed.provider },
+		visit: {
+			...visit,
+			diagnoses: visit.diagnoses.length ? visit.diagnoses : [''],
+			lines: visit.lines.map((l) => ({ ...blankLine, ...l }))
+		}
+	};
 }
 
 function isPayload(x: unknown): x is ProviderPayload {

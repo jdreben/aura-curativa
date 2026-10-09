@@ -35,3 +35,13 @@ describe('validators', () => {
 		expect(providerProblems(demoProvider(), demoVisit())).toEqual([]);
 	});
 });
+
+describe('payload compaction', () => {
+	it('restores dropped empty fields', async () => {
+		const visit = demoVisit();
+		visit.preauthNumber = '';
+		visit.lines[0].modifier = '';
+		const payload = { v: 1 as const, provider: { ...demoProvider(), ein: '' }, visit };
+		expect(await decodePayload(await encodePayload(payload))).toEqual(payload);
+	});
+});
