@@ -48,32 +48,54 @@ await sleep(900);
 await caption(p, 'Acupuncture on Triple-S Pocket Plata? One tap on an example.');
 await press(p.getByRole('button', { name: 'Acupuntura · Triple-S Pocket Plata' }));
 await glide(p, 420, 1000);
-await caption(p, 'Contigo Fit pays $20 a month — with the conditions to meet.');
-await sleep(3500);
-await glide(p, 520, 1100);
-await caption(p, 'Exactly what to ask the provider for, where to send it, and the deadline.');
-await sleep(4000);
-
-await caption(p, 'Then a few details, and the official Triple-S form is filled in for you.');
+await caption(p, 'Contigo Fit pays $20 a month. Want help with the process?');
+await sleep(2500);
+await press(p.getByRole('link', { name: '¡Empecemos!' }));
+await p.waitForURL('**/reclamar**');
+await caption(p, 'Already got the service? Yes.');
+await sleep(1200);
+await press(p.getByRole('button', { name: 'Sí', exact: true }));
 const fill = async (name, value) => {
 	const box = p.getByRole('textbox', { name });
 	await box.scrollIntoViewIfNeeded();
 	await box.pressSequentially(value, { delay: 25 });
 };
-await fill('Cuánto pagó*', '90');
+await caption(p, 'When, how much, and who.');
+await fill('Cuánto pagó ($)*', '90');
+await fill('Nombre del proveedor', 'Dra. Isabel Rivera');
+await fill('Especialidad del proveedor', 'Acupuntura');
+await press(p.getByRole('button', { name: 'Continuar' }));
+await caption(p, 'A few questions that justify the claim under the policy.');
+for (const btn of await p.getByRole('button', { name: 'Sí', exact: true }).all()) {
+	await btn.click();
+	await sleep(500);
+}
+await sleep(800);
+await press(p.getByRole('button', { name: 'Continuar' }));
+await caption(p, 'Only what the app can’t fill in for you.');
 await fill('Nombre*', 'Carmen');
 await fill('Apellido paterno*', 'Ortiz');
-await fill('Contrato Triple-S*', 'ZUA123456789');
+await fill('Número de contrato*', 'ZUA123456789');
 await fill('Dirección postal*', 'Urb. Villa Prades, Calle 3 #45');
-await fill('Ciudad / pueblo*', 'San Juan');
+await fill('Pueblo*', 'San Juan');
 await fill('Código postal*', '00924');
 await fill('Teléfono*', '(787) 555-0199');
-await press(p.getByRole('button', { name: 'Preparar mi formulario' }));
+await press(p.getByRole('button', { name: 'Llenar mi formulario' }));
+await p.getByText('Revise su formulario').waitFor();
+await caption(p, 'Review it. Anything wrong? Fix it and it refills.');
+await sleep(3500);
+await press(p.getByRole('button', { name: 'Sí, todo correcto' }));
+await caption(p, 'A prefilled email asks the provider to complete and sign their part.');
+await fill('Su email', 'carmen@example.com');
+await fill('Email del proveedor', 'dra.rivera@example.com');
+await glide(p, 250, 1000);
+await sleep(2500);
+await caption(p, 'Sent from the patient’s own email. Nothing is stored.');
 const [download] = await Promise.all([
 	p.waitForEvent('download', { timeout: 30000 }),
 	(async () => {
 		await sleep(1500);
-		await press(p.getByRole('link', { name: 'Descargar formulario' }));
+		await press(p.getByRole('link', { name: 'Descargar para imprimir' }));
 	})()
 ]);
 const pdfPath = join(OUT, 'form.pdf');
@@ -87,8 +109,9 @@ const docs = await browser.newContext({
 });
 const d = await docs.newPage();
 await showPdfPages(d, pdfPath, OUT, [
-	[1, 'The real Triple-S form, with the patient’s part filled in. The provider completes section E and signs.'],
-	[0, 'A cover sheet: expected reimbursement, conditions, deadline, and how to send it.']
+	[1, 'The real Triple-S form, filled in. The provider completes section E and signs.'],
+	[3, 'A letter citing the policy clause that entitles the refund.'],
+	[0, 'And a cover sheet: expected amount, steps, deadline, where to send.']
 ]);
 await endCard(d, '¿Me reembolsan? Know before you pay.', 'Triple-S and First Medical 2027 individual plans · No account · Nothing stored');
 await docs.close();
