@@ -11,9 +11,7 @@ const shot = async (page: Page, name: string) => {
 };
 
 test('provider prepares, patient accepts, provider prints', async ({ page, context }) => {
-	await page.goto('/');
-	await expect(page.getByRole('link', { name: 'Soy paciente' })).toHaveCount(0);
-	await page.getByRole('link', { name: 'Preparar una reclamación' }).click();
+	await page.goto('/proveedor');
 	await page.getByRole('combobox', { name: 'Importar del expediente' }).selectOption('HA-0057');
 	await expect(page.getByLabel('Apellido paterno')).toHaveValue('Rivera');
 	await expect(page.getByRole('combobox', { name: 'Plan' })).toHaveValue('directo-plata');
@@ -67,6 +65,46 @@ test('provider prepares, patient accepts, provider prints', async ({ page, conte
 
 	await page.getByRole('textbox', { name: 'Código postal*' }).fill('00901');
 	await expect(page.getByText('La información cambió')).toBeVisible();
+});
+
+test('patient learns what comes back, then prepares the form', async ({ page }) => {
+	await page.goto('/');
+	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('directo-plata');
+	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('especialista');
+	await page.getByRole('textbox', { name: 'Cuánto paga' }).fill('150');
+	await expect(page.getByText('No: su plan no reembolsa este servicio fuera de la red')).toBeVisible();
+	await expect(page.getByText('Con un proveedor de la red le costaría $15.')).toBeVisible();
+	await expect(page.getByText('4 · Cómo reclamarlo')).toHaveCount(0);
+	await shot(page, 'p1-no');
+
+	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('ts-empleador');
+	await expect(page.getByText('Alrededor de $17, si su plan incluye beneficio de reembolso')).toBeVisible();
+	await expect(page.getByText('$133.00')).toBeVisible();
+	await shot(page, 'p2-employer');
+
+	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('pocket-plata');
+	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('acupuntura');
+	await page.getByRole('textbox', { name: 'Cuánto paga' }).fill('90');
+	await expect(page.getByText('Sí, por Contigo Fit: $20 al mes')).toBeVisible();
+	await expect(page.getByText('4 · Cómo reclamarlo')).toBeVisible();
+
+	await page.getByRole('button', { name: 'Preparar mi formulario' }).click();
+	await expect(page.getByText('Antes de continuar, corrija:')).toBeVisible();
+	await page.getByRole('textbox', { name: 'Nombre*', exact: true }).fill('Carmen');
+	await page.getByLabel('Apellido paterno').fill('Ortiz');
+	await page.getByLabel('Contrato Triple-S').fill('ZUA123456789');
+	await page.getByLabel('Dirección postal').fill('Calle 3 #45');
+	await page.getByLabel('Ciudad / pueblo').fill('San Juan');
+	await page.getByRole('textbox', { name: 'Código postal*' }).fill('00924');
+	await page.getByRole('textbox', { name: 'Teléfono*', exact: true }).fill('(787) 555-0199');
+	await page.getByRole('button', { name: 'Preparar mi formulario' }).click();
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		page.getByRole('link', { name: 'Descargar formulario' }).click()
+	]);
+	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
+	expect(pdf.getPageCount()).toBe(3);
+	await shot(page, 'p3-form');
 });
 
 test('bad link shows an error, not a blank page', async ({ page }) => {

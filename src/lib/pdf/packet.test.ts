@@ -15,6 +15,14 @@ describe('Triple-S packet', () => {
 		if (process.env.PACKET_OUT) writeFileSync(process.env.PACKET_OUT, bytes);
 	});
 
+	it('patient-prepared packet leaves out the receipt', async () => {
+		const visit = { ...demoVisit(), lines: demoVisit().lines.map((l) => ({ ...l, cpt: '' })) };
+		const blank = { name: '', npi: '', ein: '', license: '', specialty: '', address1: '', address2: '', phone: '' };
+		const bytes = await buildTripleSPacket(template, blank, visit, demoPatients()[0].patient, { receipt: false, expected: '$20' });
+		expect((await PDFDocument.load(bytes)).getPageCount()).toBe(3);
+		if (process.env.PATIENT_PACKET_OUT) writeFileSync(process.env.PATIENT_PACKET_OUT, bytes);
+	});
+
 	it('strips the pre-printed ZU prefix', () => {
 		expect(contractSuffix('zu a12 345')).toBe('A12345');
 		expect(contractSuffix('A12345')).toBe('A12345');

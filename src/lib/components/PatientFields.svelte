@@ -3,11 +3,11 @@
 	import type { Patient } from '../claim.ts';
 	import { PLANS } from '../plans.ts';
 
-	let { patient = $bindable() }: { patient: Patient } = $props();
+	let { patient = $bindable(), showPlan = true }: { patient: Patient; showPlan?: boolean } = $props();
 </script>
 
 <div class="grid gap-4 sm:grid-cols-4">
-	<label class="block sm:col-span-2">
+	{#if showPlan}<label class="block sm:col-span-2">
 		<span class="text-sm font-medium text-slate-700">Plan<span class="text-rose-600"> *</span></span>
 		<select
 			bind:value={patient.plan}
@@ -16,7 +16,7 @@
 			<option value="">— Seleccione el plan —</option>
 			{#each PLANS as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
 		</select>
-	</label>
+	</label>{/if}
 	<Field label="Nombre" bind:value={patient.firstName} required />
 	<Field label="Inicial" bind:value={patient.middleInitial} />
 	<Field label="Apellido paterno" bind:value={patient.lastNamePaternal} required />

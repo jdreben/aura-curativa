@@ -39,7 +39,9 @@ function wrap(s: string, font: PDFFont, size: number, maxWidth: number): string[
 	return lines;
 }
 
-function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit) {
+export type PacketOptions = { receipt?: boolean; expected?: string };
+
+function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit, opts: PacketOptions) {
 	const page = doc.addPage([612, 792]);
 	const route = routeById(visit.route);
 	const plan = planById(patient.plan);
@@ -54,7 +56,7 @@ function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit) {
 		['Plan', plan?.name ?? '—'],
 		['Razón', route?.label ?? '—'],
 		['Total pagado', money(lineTotal(visit.lines))],
-		['Reembolso esperado', route?.amount || 'Según los beneficios fuera de la red de su plan'],
+		['Reembolso esperado', opts.expected || route?.amount || 'Según los beneficios fuera de la red de su plan'],
 		['Fecha límite', filingDeadline(visit.lines.map((l) => l.dateFrom)) || '—']
 	];
 	for (const [k, v] of summary) {
@@ -69,9 +71,16 @@ function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit) {
 
 	text(page, 'Antes de enviar, verifique:', 50, y, f.bold, 12);
 	y -= 20;
+	const providerSteps =
+		opts.receipt === false
+			? [
+					'Pida a su proveedor que complete y firme la sección E (NPI, licencia, especialidad, diagnóstico ICD-10 y código de cada servicio).',
+					'Pida un recibo timbrado y firmado con nombre, dirección, especialidad y licencia del proveedor, y lo pagado por cada servicio. Recibos de caja o "balance pendiente" no se aceptan.'
+				]
+			: ['El médico firma y pone su sello timbrado en la sección E y en la factura detallada.'];
 	const steps = [
 		'El paciente firma y fecha la sección D (Autorización del paciente).',
-		'El médico firma y pone su sello timbrado en la sección E y en la factura detallada.',
+		...providerSteps,
 		...(route?.conditions ?? []),
 		'Un formulario por miembro de la familia y por año póliza.',
 		...(patient.hasOtherCoverage ? ['Incluya la Explicación de Beneficios (EOB) del otro seguro.'] : []),
@@ -197,7 +206,8 @@ export async function buildTripleSPacket(
 	template: Uint8Array,
 	provider: Provider,
 	visit: Visit,
-	patient: Patient
+	patient: Patient,
+	opts: PacketOptions = {}
 ): Promise<Uint8Array> {
 	const out = await PDFDocument.create();
 	out.setTitle('Solicitud de reembolso Triple-S');
@@ -209,10 +219,10 @@ export async function buildTripleSPacket(
 	const lines = visit.lines.filter((l) => l.cpt.trim() || l.amountPaid.trim());
 	const v = { ...visit, lines };
 
-	drawCover(out, fonts, patient, v);
+	drawCover(out, fonts, patient, v, opts);
 	const form = await fillTripleS(template, provider, v, patient);
 	const pages = await out.copyPages(form, form.getPageIndices());
 	for (const p of pages) out.addPage(p);
-	drawReceipt(out, fonts, provider, v, patient);
+	if (opts.receipt !== false) drawReceipt(out, fonts, provider, v, patient);
 	return out.save();
 }
