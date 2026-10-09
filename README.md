@@ -1,39 +1,52 @@
 # Healing Aura
 
-Out-of-network reimbursement for patients in Puerto Rico, without the paperwork wall.
+**¿Me reembolsan?** Before a patient in Puerto Rico pays a provider outside their plan's network, Healing
+Aura tells them whether their plan will pay them back, roughly how much, what would cost less, and
+exactly how to file the claim.
 
-**Live demo:** https://18-212-154-202.sslip.io (no account needed — click *Datos de ejemplo*)
+**Live demo:** https://18-212-154-202.sslip.io (no account needed)
 
-Many good providers in Puerto Rico don't take insurance. Patients pay out of pocket, and most never file
-for the out-of-network reimbursement their plan owes them, because the claim form is confusing and gets
-returned for missing details. The provider's office already has every detail the form needs, so
-Healing Aura has the office prepare the claim and the patient just confirms it:
+## Why
 
-1. **Provider** imports the patient and their plan from intake records (simulated in the demo), adds
-   ICD-10 diagnoses and CPT services, and picks the reason for the claim.
-2. **Coverage check.** The app tells the provider, before anything is generated, whether that route is
-   reimbursable under the patient's plan, how much, and the conditions. If it isn't (a routine
-   out-of-network visit on a 2027 Triple-S individual plan), it blocks the claim and offers the routes
-   that do work: Contigo Fit, the "no participating provider" clause, Triple-S Natural, in-network labs.
-   Rules come from [the 2027 policy research](docs/triple-s-2027-reembolsos.md).
-3. **Patient** scans the QR, reviews the completed claim and what to expect back, certifies it and taps
-   *Acepto*. The phone shows a 4-digit code derived from that exact version of the claim.
-4. **Provider** types the code, which unlocks printing: the official **Triple-S Salud** form filled
-   in, the itemized receipt (*factura detallada*) with the reason for the request, and a cover sheet
-   with expected reimbursement, conditions, the 1-year deadline and how to submit (email, app or mail).
-   The patient signs section D; the provider signs and stamps.
+Many good providers in Puerto Rico don't take insurance. Patients pay cash and assume their plan will
+reimburse them. Often it won't, and when it will, the amount is set by the insurer's contracted rate,
+not by what the patient paid. Claims that are filed get returned for a missing NPI, license or stamped
+receipt. Nobody tells the patient any of this before they pay.
 
-If the provider edits anything after generating the QR, the old code stops working and they must
-generate a new one, so the patient always approves what gets printed. The code shows the patient
-opened and accepted that version; it is not a cryptographic signature.
+We read the 2027 policies and published estimates so patients don't have to:
+
+- **Triple-S individual plans** (Directo Bronce/Plata, Pocket Plata/Oro, Uno Plata) are closed networks.
+  A routine out-of-network visit in PR is not reimbursable. A few named routes are: Contigo Fit ($20/month
+  for acupuncture, massage, reflexology), adult glasses ($75/year), and 100% minus copay when no network
+  provider offers the service.
+- **Triple-S employer/PYMES plans** with a reimbursement benefit pay the *contracted rate* minus copay.
+  Triple-S publishes the averages under Ley 134-2020: a specialist visit comes back at about **$17**.
+- **First Medical Directo 2027** (Gold Plus, Gold, Silver Plus, Silver) does reimburse out of network:
+  the highest in-network rate for the same specialty, minus copay or coinsurance. Claims are due within
+  **90 days**. Acupuncture is excluded.
+
+## What the patient does
+
+1. **Su plan.** Pick the plan.
+2. **Su servicio.** Pick the service and enter what it costs.
+3. **Su respuesta.** Reimbursable or not, the estimate back and what they'll still owe, the reasoning,
+   and cheaper alternatives (an in-network copay, Triple-S Natural, SALUS or Metro Pavía at $0).
+4. **Cómo reclamarlo.** What to ask the provider for, the deadline, and where to send it. For Triple-S
+   the app fills in the official claim form (patient sections plus services) for the provider to
+   complete and sign. For First Medical it links the insurer's form.
+
+Providers can also prepare the whole claim for the patient at [`/proveedor`](https://18-212-154-202.sslip.io/proveedor):
+import the patient, run the same coverage check, and hand over a QR code. The patient reviews and
+accepts on their phone, and the provider prints the packet once the patient's code matches.
 
 ## Privacy model
 
 There is no backend and no database.
 
-- The claim travels **inside the QR link's `#fragment`**, which browsers never send to a server.
-- The PDF is generated **in the browser** with `pdf-lib`. Closing the tab discards everything.
-- The site is static files only. Hosting logs see a page request, never claim data.
+- Everything is computed and generated **in the browser**; the PDF is built with `pdf-lib`.
+- In the provider flow, the claim travels **inside the QR link's `#fragment`**, which browsers never send
+  to a server.
+- The site is static files. Hosting logs see a page request, never claim data.
 
 Demo data is synthetic. The demo NPI passes the check-digit test but is not a real provider.
 
@@ -42,37 +55,35 @@ Demo data is synthetic. The demo NPI passes the check-digit test but is not a re
 ```sh
 npm install
 npm run dev        # http://localhost:5173
-npm run test       # payload round-trip, validators, PDF packet
+npm run test       # estimator, plan rules, payload, validators, PDF packets
 npm run check      # svelte-check
 npm run build      # static site in build/
-npm run e2e        # Playwright: coverage check → QR → patient accepts → provider prints, desktop + phone
+npm run e2e        # Playwright, desktop + phone: patient estimate → form; provider QR → accept → print
                    # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
 npm run demo-video # records demo-video/healing-aura-demo.mp4 (needs npm run preview, ffmpeg, pdftoppm)
 scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 ```
 
-Click **Datos de ejemplo** on the provider page, generate the QR code, then **Abrir como paciente** and
-load the example patient to get a full packet.
+## Where the rules live
 
-## How the form filling works
-
-`static/forms/triple-s-reembolso.pdf` is the public Triple-S form (Rev. 06/2009). It has real AcroForm
-fields; `scripts/list-fields.mjs` prints them. `src/lib/pdf/triple-s.ts` maps our data onto those
-fields by name and flattens the result so every printer renders the same thing. Adding an insurer means
-adding one more mapping file.
+- `src/lib/estimate.ts`: patient-side estimator: plans, services, published averages, in-network
+  costs, claim rules per insurer.
+- `src/lib/plans.ts`: reimbursement routes for the provider flow.
+- `src/lib/pdf/triple-s.ts`: fills the real AcroForm fields of `static/forms/triple-s-reembolso.pdf`
+  (Rev. 06/2009) by name; `scripts/list-fields.mjs` prints them.
 
 ## Research
 
-- [Triple-S 2027 individual plans: what gets reimbursed](docs/triple-s-2027-reembolsos.md) — routes,
-  exclusions, labs, claim rules and deadlines across five plans.
+- [Triple-S 2027 individual plans: what gets reimbursed](docs/triple-s-2027-reembolsos.md)
+- [Triple-S published out-of-network estimates (Ley 134-2020)](docs/triple-s-oon-estimates-2027.md)
+- [First Medical Directo 2027: reimbursement rules and source cross-check](docs/first-medical-2027-reembolsos.md)
 
 ## Known limits
 
-- Triple-S only so far. MCS (commercial and Classicare) is next — the forms are public and ask for the
-  same data.
-- The provider still signs and stamps (*sello timbrado*) by hand; the patient signs section D by hand.
-- The intake-record import is simulated with three synthetic patients; a real version would read from
-  the practice's EHR or intake form.
-- No eligibility check yet, so the app can't tell a patient up front whether their plan pays
-  out-of-network or how much. It makes the claim complete; it doesn't promise it will be paid.
-- Prescriptions and labs use different forms and aren't covered.
+- Estimates, not coverage determinations. Plans change every year.
+- First Medical doesn't publish its fee schedule, so the app shows the formula and the copay and points
+  the patient to First Medical's estimate line (1-888-318-0274), not a dollar figure.
+- MCS, Menonita, Bella Vista and Ryder aren't verified yet; the app says so.
+- Employer plans vary; the app assumes a reimbursement benefit and tells the patient to confirm it.
+- Signatures and the provider's stamp stay on paper.
+- The provider flow's intake-record import is simulated with three synthetic patients.

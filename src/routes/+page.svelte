@@ -5,11 +5,10 @@
 	import Problems from '#lib/components/Problems.svelte';
 	import { emptyPatient, emptyProvider, emptyVisit, patientProblems } from '#lib/claim.ts';
 	import type { ServiceLine } from '#lib/claim.ts';
-	import { PATIENT_PLANS, SERVICES, claimable, estimate } from '#lib/estimate.ts';
+	import { CLAIM_RULES, PATIENT_PLANS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
 	import { packetObjectUrl } from '#lib/pdf/browser.ts';
 	import { TRIPLE_S } from '#lib/pdf/triple-s.ts';
-	import { filingDeadline } from '#lib/plans.ts';
 	import type { PlanId } from '#lib/plans.ts';
 
 	const today = () => {
@@ -33,7 +32,7 @@
 	const est = $derived(estimate(plan, service, Number.parseFloat(paid)));
 	const canClaim = $derived(claimable(est));
 	const formPlan = $derived<PlanId>(
-		plan === 'ts-empleador' || plan === 'otro' || plan === '' ? 'otro' : plan
+		plan === '' || plan === 'ts-empleador' || plan === 'otro' || plan.startsWith('fm-') ? 'otro' : (plan as PlanId)
 	);
 	const problems = $derived([
 		...patientProblems({ ...patient, plan: formPlan }),
@@ -167,23 +166,42 @@
 		</section>
 	{/if}
 
-	{#if est && canClaim}
+	{#if est && canClaim && est.insurer}
+		{@const rules = CLAIM_RULES[est.insurer]}
 		<section class="rounded-xl border border-slate-200 bg-white p-5">
 			<h2 class="text-sm font-semibold text-slate-800">4 · Cómo reclamarlo</h2>
-			<ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+			<label class="mt-3 block w-48">
+				<span class="text-sm font-medium text-slate-700">Fecha del servicio</span>
+				<input
+					type="date"
+					bind:value={date}
+					class="mt-1 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
+				/>
+			</label>
+			<ol class="mt-4 list-decimal space-y-2 pl-5 text-sm text-slate-700">
 				{#each est.conditions as c (c)}<li>{c}</li>{/each}
 				<li>
-					Pídale a su proveedor un <strong>recibo timbrado y firmado</strong> con su nombre, dirección,
-					especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo que usted
-					pagó. Recibos de caja o de "balance pendiente" no se aceptan.
+					Pídale a su proveedor un <strong>recibo original, timbrado y firmado</strong> con su nombre,
+					dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código (CPT) de cada servicio y
+					lo que usted pagó. Recibos de caja o de "balance pendiente" no se aceptan.
 				</li>
-				<li>Pídale que complete y firme la sección E del formulario que preparamos abajo.</li>
+				{#if est.insurer === 'triple-s'}
+					<li>Pídale que complete y firme la sección E del formulario que preparamos abajo.</li>
+				{:else if rules.form}
+					<li>
+						Llene la
+						<a href={rules.form} target="_blank" rel="noopener" class="font-medium text-teal-700 underline">Solicitud de Reembolso de First Medical</a>
+						y marque "Proveedor no acepta el plan".
+					</li>
+				{/if}
+				<li>Envíelo a {rules.send}</li>
 				<li>
-					Envíelo a <strong>{TRIPLE_S.email}</strong>, por la app Mi Triple-S o por correo. Fecha límite:
-					<strong>{filingDeadline([date]) || 'un año después del servicio'}</strong>.
+					<strong>Fecha límite: {deadlineFrom(date, rules.deadlineDays) || `${rules.deadlineDays} días después del servicio`}</strong>
+					({rules.deadlineDays === 365 ? 'un año' : `${rules.deadlineDays} días`} desde el servicio).
 				</li>
 			</ol>
 
+			{#if est.insurer === 'triple-s'}
 			<form
 				class="mt-6 space-y-4 border-t border-slate-100 pt-5"
 				onsubmit={(e) => {
@@ -192,14 +210,6 @@
 				}}
 			>
 				<p class="text-sm font-semibold text-slate-800">Prepare su formulario</p>
-				<label class="block w-48">
-					<span class="text-sm font-medium text-slate-700">Fecha del servicio</span>
-					<input
-						type="date"
-						bind:value={date}
-						class="mt-1 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
-					/>
-				</label>
 				<PatientFields bind:patient showPlan={false} />
 				{#if attempted}<Problems {problems} />{/if}
 				{#if packet.status === 'ready'}
@@ -235,6 +245,7 @@
 					</p>
 				{/if}
 			</form>
+			{/if}
 
 			<p class="mt-5 text-sm text-slate-600">
 				¿Su proveedor prefiere prepararlo por usted? Compártale
@@ -244,7 +255,8 @@
 	{/if}
 
 	<p class="text-xs text-slate-500">
-		Fuentes: pólizas 2027 de Triple-S (Directo, Pocket, Uno) y el estimado de servicios fuera de la red que
-		Triple-S publica bajo la Ley 134-2020. Son estimados, no una determinación de cubierta.
+		Fuentes: pólizas 2027 de Triple-S (Directo, Pocket, Uno) y First Medical Directo, y el estimado de
+		servicios fuera de la red que Triple-S publica bajo la Ley 134-2020. Son estimados, no una
+		determinación de cubierta.
 	</p>
 </div>
