@@ -69,12 +69,12 @@ const t0 = Date.now();
 await p1.goto(BASE);
 await caption(p1, 'Many PR providers don’t take insurance. Patients pay — and rarely get reimbursed.');
 await sleep(3000);
-await caption(p1, 'Healing Aura: the provider prepares the Triple-S claim, the patient just reviews it.');
+await caption(p1, 'Healing Aura checks what the patient’s plan actually reimburses, then files it right.');
 await sleep(3000);
-await press(p1.getByRole('link', { name: 'Soy proveedor' }));
+await press(p1.getByRole('link', { name: 'Preparar una reclamación' }));
 await p1.waitForURL('**/proveedor');
-await caption(p1, 'Patient details come straight from the practice’s intake records (simulated here).');
-await sleep(1500);
+await caption(p1, 'Patient and plan come straight from the practice’s intake records (simulated here).');
+await sleep(1200);
 const picker = p1.getByRole('combobox', { name: 'Importar del expediente' });
 await picker.evaluate((el) => {
 	el.style.outline = '4px solid #f59e0b';
@@ -83,12 +83,23 @@ await picker.evaluate((el) => {
 await sleep(700);
 await picker.selectOption('HA-0042');
 await picker.evaluate((el) => (el.style.outline = ''));
-await sleep(2500);
-await caption(p1, 'Provider info, ICD-10 diagnoses and CPT services, with validation that catches rejections.');
+await sleep(1800);
+await caption(p1, 'Add the visit: ICD-10 diagnosis, CPT services, amount paid.');
 await press(p1.getByRole('button', { name: 'Datos de ejemplo' }));
+await glide(p1, 1500, 1800);
+const reason = p1.getByRole('combobox', { name: 'Razón de la solicitud' });
+await reason.scrollIntoViewIfNeeded();
+await reason.selectOption('routine');
+await glide(p1, 400, 900);
+await caption(p1, 'A regular out-of-network visit isn’t reimbursable on 2027 Triple-S individual plans. We say so.');
+await sleep(4500);
+await caption(p1, 'And show what does work. Acupuncture qualifies for Contigo Fit.');
+await sleep(1500);
+await press(p1.getByRole('button', { name: 'Usar esta ruta' }).first());
 await sleep(800);
-await glide(p1, 1400, 1800);
-await glide(p1, 900);
+await glide(p1, -200, 900);
+await caption(p1, 'Reimbursable: $20/month, with the conditions the patient must meet.');
+await sleep(3500);
 await press(p1.getByRole('button', { name: /Generar código QR/ }));
 await p1.getByAltText('Código QR para el paciente').scrollIntoViewIfNeeded();
 await caption(p1, 'The whole claim travels inside the QR code. No server, no database.');
@@ -104,9 +115,10 @@ const phone = await browser.newContext({
 const p2 = await phone.newPage();
 await p2.goto(link);
 await caption(p2, 'The patient scans and sees the completed claim. Nothing to type.');
-await sleep(3500);
-await glide(p2, 700);
-await sleep(1200);
+await sleep(3000);
+await glide(p2, 900);
+await caption(p2, 'Including exactly what to expect back and the filing deadline.');
+await sleep(2500);
 await glide(p2, 700);
 await caption(p2, 'They certify it’s correct and accept.');
 await press(p2.getByRole('checkbox'));
@@ -165,7 +177,7 @@ for (const [file, text] of show) {
 	await sleep(1200);
 }
 await p3.setContent(
-	`<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ccfbf1,#ede9fe);font-family:system-ui"><div style="text-align:center"><div style="font-size:56px;font-weight:800;color:#134e4a">Healing Aura</div><div style="font-size:24px;color:#334155;margin-top:12px">Out-of-network reimbursement, made easy in Puerto Rico.</div><div style="font-size:18px;color:#475569;margin-top:28px">No database · Built in the browser · Next: MCS, eligibility checks, mail-for-me</div></div></body>`
+	`<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ccfbf1,#ede9fe);font-family:system-ui"><div style="text-align:center"><div style="font-size:56px;font-weight:800;color:#134e4a">Healing Aura</div><div style="font-size:24px;color:#334155;margin-top:12px">Out-of-network reimbursement, made easy in Puerto Rico.</div><div style="font-size:18px;color:#475569;margin-top:28px">Honest coverage answers · No database · Next: MCS, group/PPO plans, email submission</div></div></body>`
 );
 await sleep(4500);
 await docs.close();

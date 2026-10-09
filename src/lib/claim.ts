@@ -1,3 +1,5 @@
+import type { PlanId, RouteId } from './plans.ts';
+
 export type Provider = {
 	name: string;
 	npi: string;
@@ -25,6 +27,7 @@ export type Visit = {
 	diagnosisDescription: string;
 	preauthNumber: string;
 	accountNumber: string;
+	route: RouteId | '';
 	lines: ServiceLine[];
 };
 
@@ -46,6 +49,7 @@ export type Patient = {
 	groupName: string;
 	hasOtherCoverage: boolean;
 	medicareEligible: boolean;
+	plan: PlanId | '';
 };
 
 export type Insurer = 'triple-s';
@@ -86,6 +90,7 @@ export const emptyVisit = (): Visit => ({
 	diagnosisDescription: '',
 	preauthNumber: '',
 	accountNumber: '',
+	route: '',
 	lines: [emptyLine()]
 });
 
@@ -105,7 +110,8 @@ export const emptyPatient = (): Patient => ({
 	groupNumber: '',
 	groupName: '',
 	hasOtherCoverage: false,
-	medicareEligible: false
+	medicareEligible: false,
+	plan: ''
 });
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -210,6 +216,7 @@ export function providerProblems(provider: Provider, visit: Visit): string[] {
 	for (const d of dx) if (!isValidIcd10(d)) problems.push(`Diagnóstico "${d}" no parece un código ICD-10.`);
 	const lines = visit.lines.filter((l) => l.cpt.trim() || l.amountPaid.trim());
 	if (lines.length === 0) problems.push('Incluya al menos un servicio.');
+	if (!visit.route) problems.push('Escoja la razón de la solicitud de reembolso.');
 	lines.forEach((l, i) => {
 		const n = i + 1;
 		if (!l.dateFrom) problems.push(`Servicio ${n}: falta la fecha.`);
@@ -226,5 +233,6 @@ export function patientProblems(p: Patient): string[] {
 	if (!p.contractNumber.trim()) problems.push('Falta su número de contrato (vea su tarjeta del plan).');
 	if (!p.address1.trim() || !p.city.trim() || !p.zip.trim()) problems.push('Falta su dirección postal completa.');
 	if (!p.phone.trim()) problems.push('Falta su número de teléfono.');
+	if (!p.plan) problems.push('Escoja el plan del paciente.');
 	return problems;
 }

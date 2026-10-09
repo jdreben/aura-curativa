@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import type { PDFFont, PDFPage } from 'pdf-lib';
 import type { Patient, Provider, Visit } from '../claim';
 import { lineTotal, money, patientFullName } from '../claim';
+import { filingDeadline, planById, routeById } from '../plans.ts';
 import { TRIPLE_S, fillTripleS, isoToForm, winAnsi } from './triple-s';
 
 const BLACK = rgb(0, 0, 0);
@@ -24,63 +25,90 @@ function rule(page: PDFPage, y: number, x1 = 50, x2 = 562) {
 	page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness: 0.75, color: RULE });
 }
 
+function wrap(s: string, font: PDFFont, size: number, maxWidth: number): string[] {
+	const lines: string[] = [];
+	let line = '';
+	for (const word of winAnsi(s).split(' ')) {
+		const next = line ? `${line} ${word}` : word;
+		if (line && font.widthOfTextAtSize(next, size) > maxWidth) {
+			lines.push(line);
+			line = word;
+		} else line = next;
+	}
+	if (line) lines.push(line);
+	return lines;
+}
+
 function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit) {
 	const page = doc.addPage([612, 792]);
+	const route = routeById(visit.route);
+	const plan = planById(patient.plan);
 	let y = 730;
 	text(page, 'Healing Aura', 50, y, f.bold, 22);
 	y -= 22;
 	text(page, 'Paquete de reembolso — Triple-S Salud', 50, y, f.regular, 13, GRAY);
-	y -= 36;
+	y -= 34;
 
-	text(page, 'Envíe este paquete por correo a:', 50, y, f.bold, 12);
-	y -= 20;
-	for (const l of TRIPLE_S.mailTo) {
-		text(page, l, 70, y, f.regular, 12);
-		y -= 16;
+	const summary: [string, string][] = [
+		['Paciente', patientFullName(patient)],
+		['Plan', plan?.name ?? '—'],
+		['Razón', route?.label ?? '—'],
+		['Total pagado', money(lineTotal(visit.lines))],
+		['Reembolso esperado', route?.amount || 'Según los beneficios fuera de la red de su plan'],
+		['Fecha límite', filingDeadline(visit.lines.map((l) => l.dateFrom)) || '—']
+	];
+	for (const [k, v] of summary) {
+		text(page, k, 50, y, f.regular, 10.5, GRAY);
+		for (const l of wrap(v, f.regular, 10.5, 370)) {
+			text(page, l, 180, y, f.regular, 10.5);
+			y -= 14;
+		}
+		y -= 2;
 	}
-	y -= 20;
+	y -= 16;
 
 	text(page, 'Antes de enviar, verifique:', 50, y, f.bold, 12);
 	y -= 20;
 	const steps = [
 		'El paciente firma y fecha la sección D (Autorización del paciente).',
 		'El médico firma y pone su sello timbrado en la sección E y en la factura detallada.',
-		'Incluya la factura detallada (incluida en este paquete) firmada por el proveedor.',
-		`Su número de contrato (${patient.contractNumber || '—'}) aparece en cada documento.`,
+		...(route?.conditions ?? []),
 		'Un formulario por miembro de la familia y por año póliza.',
-		'Si tiene otro seguro, incluya la Explicación de Beneficios (EOB) del otro seguro.',
+		...(patient.hasOtherCoverage ? ['Incluya la Explicación de Beneficios (EOB) del otro seguro.'] : []),
 		'Guarde una copia de todo antes de enviar.'
 	];
 	for (const s of steps) {
+		const lines = wrap(s, f.regular, 10.5, 480);
 		page.drawRectangle({ x: 52, y: y - 2, width: 9, height: 9, borderColor: BLACK, borderWidth: 0.75 });
-		text(page, s, 70, y, f.regular, 10.5);
-		y -= 18;
+		for (const l of lines) {
+			text(page, l, 70, y, f.regular, 10.5);
+			y -= 14;
+		}
+		y -= 4;
 	}
-	y -= 20;
+	y -= 16;
 
-	text(page, 'Resumen', 50, y, f.bold, 12);
+	text(page, 'Cómo enviar (escoja una):', 50, y, f.bold, 12);
 	y -= 20;
-	const summary: [string, string][] = [
-		['Paciente', patientFullName(patient)],
-		['Servicios', String(visit.lines.length)],
-		['Total pagado', money(lineTotal(visit.lines))]
-	];
-	for (const [k, v] of summary) {
-		text(page, k, 70, y, f.regular, 10.5, GRAY);
-		text(page, v, 180, y, f.regular, 10.5);
-		y -= 16;
+	text(page, `Correo electrónico: ${TRIPLE_S.email} (escanee todo en un PDF)`, 70, y, f.regular, 10.5);
+	y -= 16;
+	text(page, 'App Mi Triple-S o centro de servicio', 70, y, f.regular, 10.5);
+	y -= 16;
+	for (const l of wrap(`Correo postal: ${TRIPLE_S.mailTo.join(', ')}`, f.regular, 10.5, 480)) {
+		text(page, l, 70, y, f.regular, 10.5);
+		y -= 14;
 	}
 
 	text(
 		page,
-		'Generado en su dispositivo por Healing Aura. Ningún dato se guardó en un servidor.',
+		'Generado en su dispositivo por Healing Aura. Ningún dato se guardó en un servidor. No es asesoría legal ni de seguros.',
 		50,
 		60,
 		f.regular,
 		8.5,
 		GRAY
 	);
-	text(page, `Formulario: ${TRIPLE_S.formRevision}`, 50, 48, f.regular, 8.5, GRAY);
+	text(page, `Formulario: ${TRIPLE_S.formRevision}. Reglas: pólizas Triple-S 2027.`, 50, 48, f.regular, 8.5, GRAY);
 }
 
 function drawReceipt(doc: PDFDocument, f: Fonts, provider: Provider, visit: Visit, patient: Patient) {
@@ -108,10 +136,15 @@ function drawReceipt(doc: PDFDocument, f: Fonts, provider: Provider, visit: Visi
 		['Diagnóstico (ICD-10)', visit.diagnoses.filter((d) => d.trim()).map((d) => d.toUpperCase()).join(', ')]
 	];
 	if (visit.diagnosisDescription) meta.push(['Descripción', visit.diagnosisDescription]);
+	const reason = routeById(visit.route)?.reason;
+	if (reason) meta.push(['Razón de la solicitud', reason]);
 	for (const [k, v] of meta) {
 		text(page, k, 50, y, f.regular, 9.5, GRAY);
-		text(page, fit(v, f.regular, 9.5, 380), 175, y, f.regular, 9.5);
-		y -= 14;
+		for (const l of wrap(v, f.regular, 9.5, 385)) {
+			text(page, l, 175, y, f.regular, 9.5);
+			y -= 13;
+		}
+		y -= 1;
 	}
 	y -= 12;
 

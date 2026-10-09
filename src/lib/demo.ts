@@ -6,7 +6,7 @@ export const demoProvider = (): Provider => ({
 	npi: '1234567893',
 	ein: '66-0000000',
 	license: 'PR-12345',
-	specialty: 'Medicina Funcional / Medicina Interna',
+	specialty: 'Medicina Integrativa / Acupuntura',
 	address1: 'Calle Loíza 1500, Suite 2',
 	address2: 'San Juan, PR 00911',
 	phone: '(787) 555-0142'
@@ -15,32 +15,25 @@ export const demoProvider = (): Provider => ({
 export const demoVisit = (): Visit => {
 	const d = new Date();
 	const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+	const line = (cpt: string, description: string, amountPaid: string) => ({
+		dateFrom: today,
+		dateTo: today,
+		placeOfService: '11',
+		description,
+		cpt,
+		modifier: '',
+		units: '1',
+		amountPaid
+	});
 	return {
-		diagnoses: ['E55.9', 'R53.83'],
-		diagnosisDescription: 'Deficiencia de vitamina D; fatiga',
+		diagnoses: ['M54.50'],
+		diagnosisDescription: 'Dolor lumbar',
 		preauthNumber: '',
 		accountNumber: 'HA-0042',
+		route: 'contigo-fit',
 		lines: [
-			{
-				dateFrom: today,
-				dateTo: today,
-				placeOfService: '11',
-				description: 'Visita de oficina, paciente nuevo (60 min)',
-				cpt: '99205',
-				modifier: '',
-				units: '1',
-				amountPaid: '250.00'
-			},
-			{
-				dateFrom: today,
-				dateTo: today,
-				placeOfService: '11',
-				description: 'Venipuntura',
-				cpt: '36415',
-				modifier: '',
-				units: '1',
-				amountPaid: '15.00'
-			}
+			line('97810', 'Acupuntura, 15 min iniciales', '70.00'),
+			line('97811', 'Acupuntura, 15 min adicionales', '35.00')
 		]
 	};
 };
@@ -68,7 +61,8 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupNumber: '0001234',
 			groupName: 'Empresa Ejemplo, Inc.',
 			hasOtherCoverage: false,
-			medicareEligible: false
+			medicareEligible: false,
+			plan: 'pocket-plata'
 		}
 	},
 	{
@@ -90,7 +84,8 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupNumber: '0005678',
 			groupName: 'Cooperativa Ejemplo',
 			hasOtherCoverage: false,
-			medicareEligible: false
+			medicareEligible: false,
+			plan: 'directo-plata'
 		}
 	},
 	{
@@ -112,7 +107,8 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupNumber: '0009012',
 			groupName: 'Municipio Ejemplo',
 			hasOtherCoverage: true,
-			medicareEligible: false
+			medicareEligible: false,
+			plan: 'otro'
 		}
 	}
 ];

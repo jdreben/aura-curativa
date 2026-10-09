@@ -2,9 +2,10 @@
 
 **Short description (2–3 sentences):**
 Patients in Puerto Rico who see providers outside their insurance network rarely get reimbursed. The
-Triple-S claim form is confusing and gets returned for missing details. Healing Aura lets the
-provider's office prepare the complete claim from data it already has; the patient scans a QR code,
-reviews and accepts it on their phone, and the office prints a ready-to-sign packet. No data is ever stored.
+Triple-S claim form is confusing, plans reimburse far less than people assume, and claims get
+returned for missing details. Healing Aura tells the provider's office what the patient's plan actually
+reimburses (and what to do when it doesn't), prepares the complete claim from data the office already
+has, and lets the patient review and accept it from a QR code. No data is ever stored.
 
 ## Inspiration
 
@@ -17,8 +18,14 @@ license number or a receipt that says "balance pending."
 
 ## What it does
 
-- **Provider** imports the patient from intake records (simulated with synthetic patients), adds the
-  visit's diagnoses and services, and generates a QR code.
+- **Provider** imports the patient and their plan from intake records (simulated with synthetic
+  patients) and adds the visit's diagnoses and services.
+- **Coverage check:** we read the 2027 policies for five Triple-S individual plans. The app tells the
+  provider whether the claim's route is reimbursable, how much, and under what conditions. A routine
+  out-of-network visit isn't reimbursable on these plans, so instead of filing a claim that will be
+  denied, the app offers routes that work: Contigo Fit ($20/month for acupuncture, massage,
+  reflexology), the "no participating provider" clause (100% minus cost-sharing), Triple-S Natural,
+  and in-network labs.
 - **Patient** scans it and sees the fully completed claim: their details, the visit, every charge,
   and the filled PDF if they want it. They check the certification and tap *Acepto*. Nothing to type.
 - The patient's phone shows a **4-digit acceptance code** computed from that exact version of the claim.
@@ -61,6 +68,9 @@ license number or a receipt that says "balance pending."
 - A receipt that meets every item on Triple-S's own receipt checklist.
 
 ## What we learned
+
+- The 2027 Triple-S individual plans (Directo, Pocket, Uno) are closed networks. Out-of-network care
+  in PR is excluded except for a short list of named routes. Knowing that up front is itself help.
 
 - The barrier isn't eligibility. It's paperwork split across two people who never fill it out together.
 - Puerto Rico insurers publish their reimbursement forms, and the forms rarely change (Triple-S's is

@@ -19,10 +19,6 @@
 				<span class="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-teal-400 to-violet-400"></span>
 				Healing Aura
 			</a>
-			<nav class="flex gap-4 text-sm text-slate-600">
-				<a href={resolve('/proveedor')} class="hover:text-teal-700">Proveedor</a>
-				<a href={resolve('/paciente')} class="hover:text-teal-700">Paciente</a>
-			</nav>
 		</div>
 	</header>
 

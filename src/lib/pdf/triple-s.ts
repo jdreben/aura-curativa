@@ -6,6 +6,7 @@ import { patientFullName } from '../claim';
 export const TRIPLE_S = {
 	name: 'Triple-S Salud',
 	formRevision: 'SAC_Solicitud_Reembolso_Rev.062909',
+	email: 'reembolso@ssspr.com',
 	mailTo: ['TRIPLE-S SALUD', 'Departamento de Reembolsos', 'PO BOX 363628', 'SAN JUAN, PR 00936-3628']
 } as const;
 

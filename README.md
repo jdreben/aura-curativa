@@ -9,13 +9,19 @@ for the out-of-network reimbursement their plan owes them, because the claim for
 returned for missing details. The provider's office already has every detail the form needs, so
 Healing Aura has the office prepare the claim and the patient just confirms it:
 
-1. **Provider** imports the patient from their intake records (simulated in the demo), adds ICD-10
-   diagnoses and CPT services, and generates a QR code.
-2. **Patient** scans it, reviews the fully completed claim on their phone, certifies it and taps
+1. **Provider** imports the patient and their plan from intake records (simulated in the demo), adds
+   ICD-10 diagnoses and CPT services, and picks the reason for the claim.
+2. **Coverage check.** The app tells the provider, before anything is generated, whether that route is
+   reimbursable under the patient's plan, how much, and the conditions. If it isn't (a routine
+   out-of-network visit on a 2027 Triple-S individual plan), it blocks the claim and offers the routes
+   that do work: Contigo Fit, the "no participating provider" clause, Triple-S Natural, in-network labs.
+   Rules come from [the 2027 policy research](docs/triple-s-2027-reembolsos.md).
+3. **Patient** scans the QR, reviews the completed claim and what to expect back, certifies it and taps
    *Acepto*. The phone shows a 4-digit code derived from that exact version of the claim.
-3. **Provider** types the code, which unlocks printing: the official **Triple-S Salud** form filled
-   in, the itemized receipt (*factura detallada*) Triple-S requires, and a cover sheet with the mailing
-   address and checklist. The patient signs section D; the provider signs and stamps.
+4. **Provider** types the code, which unlocks printing: the official **Triple-S Salud** form filled
+   in, the itemized receipt (*factura detallada*) with the reason for the request, and a cover sheet
+   with expected reimbursement, conditions, the 1-year deadline and how to submit (email, app or mail).
+   The patient signs section D; the provider signs and stamps.
 
 If the provider edits anything after generating the QR, the old code stops working and they must
 generate a new one, so the patient always approves what gets printed. The code shows the patient
@@ -39,7 +45,7 @@ npm run dev        # http://localhost:5173
 npm run test       # payload round-trip, validators, PDF packet
 npm run check      # svelte-check
 npm run build      # static site in build/
-npm run e2e        # Playwright: provider → QR → patient accepts → provider prints, desktop + phone
+npm run e2e        # Playwright: coverage check → QR → patient accepts → provider prints, desktop + phone
                    # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
 npm run demo-video # records demo-video/healing-aura-demo.mp4 (needs npm run preview, ffmpeg, pdftoppm)
 scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)

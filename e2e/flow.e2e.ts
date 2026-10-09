@@ -11,10 +11,22 @@ const shot = async (page: Page, name: string) => {
 };
 
 test('provider prepares, patient accepts, provider prints', async ({ page, context }) => {
-	await page.goto('/proveedor');
+	await page.goto('/');
+	await expect(page.getByRole('link', { name: 'Soy paciente' })).toHaveCount(0);
+	await page.getByRole('link', { name: 'Preparar una reclamación' }).click();
 	await page.getByRole('combobox', { name: 'Importar del expediente' }).selectOption('HA-0057');
 	await expect(page.getByLabel('Apellido paterno')).toHaveValue('Rivera');
+	await expect(page.getByRole('combobox', { name: 'Plan' })).toHaveValue('directo-plata');
 	await page.getByRole('button', { name: 'Datos de ejemplo' }).click();
+
+	const reason = page.getByRole('combobox', { name: 'Razón de la solicitud' });
+	await reason.selectOption('routine');
+	await expect(page.getByText('Este plan no reembolsa visitas regulares')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Escoja una ruta reembolsable para continuar' })).toBeDisabled();
+	await shot(page, '1-not-covered');
+	await page.getByRole('button', { name: 'Usar esta ruta' }).first().click();
+	await expect(reason).toHaveValue('contigo-fit');
+	await expect(page.getByText('Reembolsable · $20 al mes, hasta 12 meses')).toBeVisible();
 	await shot(page, '1-provider');
 	await page.getByRole('button', { name: /Generar código QR/ }).click();
 	const qr = page.getByAltText('Código QR para el paciente');
@@ -29,6 +41,7 @@ test('provider prepares, patient accepts, provider prints', async ({ page, conte
 	await patient.goto(link);
 	await expect(patient.getByText('Ortiz Santiago Carmen L')).toBeVisible();
 	await expect(patient.getByText('ZUA123456789')).toBeVisible();
+	await expect(patient.getByText('Reembolso esperado: $20 al mes, hasta 12 meses')).toBeVisible();
 	const accept = patient.getByRole('button', { name: 'Acepto' });
 	await expect(accept).toBeDisabled();
 	await shot(patient, '3-review');

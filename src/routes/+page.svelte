@@ -7,32 +7,24 @@
 		Su médico no acepta su plan.<br />Su plan igual le puede reembolsar.
 	</h1>
 	<p class="mx-auto mt-4 max-w-2xl text-slate-600">
-		Healing Aura convierte la solicitud de reembolso fuera de red en un proceso de dos minutos: el
-		proveedor prepara la reclamación completa con los datos que ya tiene, el paciente la revisa y la
-		acepta desde su celular, y sale un paquete listo para firmar y enviar a Triple-S.
+		Healing Aura le dice al proveedor qué es reembolsable bajo el plan del paciente, prepara la
+		reclamación completa con los datos que ya tiene, y el paciente solo la revisa y la acepta desde su
+		celular.
 	</p>
-	<div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-		<a
-			href={resolve('/proveedor')}
-			class="rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white shadow hover:bg-teal-800"
-		>
-			Soy proveedor
-		</a>
-		<a
-			href={resolve('/paciente')}
-			class="rounded-xl border border-teal-700 px-6 py-3 font-semibold text-teal-800 hover:bg-teal-50"
-		>
-			Soy paciente
-		</a>
-	</div>
+	<a
+		href={resolve('/proveedor')}
+		class="mt-8 inline-block rounded-xl bg-teal-700 px-8 py-3 font-semibold text-white shadow hover:bg-teal-800"
+	>
+		Preparar una reclamación
+	</a>
 </section>
 
 <section class="mt-12 grid gap-4 sm:grid-cols-3">
 	<div class="rounded-xl border border-slate-200 bg-white p-5">
 		<p class="text-xs font-semibold tracking-wide text-teal-700 uppercase">1 · Proveedor</p>
 		<p class="mt-2 text-sm text-slate-700">
-			Importa los datos del paciente de su expediente, añade diagnósticos y servicios, y genera un
-			código QR.
+			Importa al paciente y su plan, añade la visita, y ve al instante si es reembolsable — y si no,
+			qué ruta sí funciona.
 		</p>
 	</div>
 	<div class="rounded-xl border border-slate-200 bg-white p-5">

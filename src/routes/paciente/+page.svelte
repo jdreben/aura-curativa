@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { resolve } from '$app/paths';
 	import type { ClaimPayload } from '#lib/claim.ts';
 	import { acceptanceCode, decodePayload, lineTotal, money, patientFullName } from '#lib/claim.ts';
 	import { packetObjectUrl } from '#lib/pdf/browser.ts';
 	import { TRIPLE_S, isoToForm } from '#lib/pdf/triple-s.ts';
+	import { filingDeadline, planById, routeById } from '#lib/plans.ts';
 
 	let claim = $state<
 		| { status: 'loading' }
@@ -67,11 +67,7 @@
 {:else if claim.status === 'missing'}
 	<div class="mt-6 rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-700">
 		<p class="font-semibold">Escanee el código QR que le muestra su proveedor.</p>
-		<p class="mt-2">
-			Su proveedor prepara la reclamación desde
-			<a href={resolve('/proveedor')} class="font-medium text-teal-700 underline">la página de proveedor</a>.
-			Usted solo la revisa y la acepta.
-		</p>
+		<p class="mt-2">Su proveedor prepara la reclamación. Usted solo la revisa y la acepta.</p>
 	</div>
 {:else if claim.status === 'error'}
 	<div class="mt-6 rounded-xl border border-rose-300 bg-rose-50 p-6 text-sm text-rose-900" role="alert">
@@ -155,6 +151,27 @@
 					Total pagado: <span class="font-semibold">{money(lineTotal(lines))}</span>
 				</p>
 			{/if}
+		</section>
+
+		{@const route = routeById(visit.route)}
+		<section class="mt-4 rounded-xl border border-violet-200 bg-violet-50 p-5 text-sm text-violet-950">
+			<p class="text-xs font-semibold tracking-wide text-violet-700 uppercase">Qué esperar</p>
+			<p class="mt-2">
+				<span class="text-violet-700">Plan:</span>
+				{planById(patient.plan)?.name ?? '—'}
+			</p>
+			<p><span class="text-violet-700">Razón:</span> {route?.label ?? '—'}</p>
+			<p class="mt-2 font-semibold">
+				Reembolso esperado: {route?.amount || 'según los beneficios fuera de la red de su plan'}
+			</p>
+			{#if route && route.conditions.length > 0}
+				<ul class="mt-2 list-disc space-y-1 pl-5">
+					{#each route.conditions as c (c)}<li>{c}</li>{/each}
+				</ul>
+			{/if}
+			<p class="mt-2 text-violet-800">
+				Fecha límite para someter: {filingDeadline(lines.map((l) => l.dateFrom)) || '—'}
+			</p>
 		</section>
 
 		<div class="mt-4">

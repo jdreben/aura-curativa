@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import Field from '#lib/components/Field.svelte';
 	import PatientFields from '#lib/components/PatientFields.svelte';
+	import CoverageCheck from '#lib/components/CoverageCheck.svelte';
 	import Problems from '#lib/components/Problems.svelte';
 	import {
 		MAX_LINES,
@@ -21,6 +22,7 @@
 	} from '#lib/claim.ts';
 	import { demoPatients, demoProvider, demoVisit } from '#lib/demo.ts';
 	import { packetObjectUrl } from '#lib/pdf/browser.ts';
+	import { ROUTES, assess, canFile } from '#lib/plans.ts';
 
 	const records = demoPatients();
 
@@ -45,6 +47,14 @@
 
 	const problems = $derived([...patientProblems(patient), ...providerProblems(provider, visit)]);
 	const total = $derived(lineTotal(visit.lines));
+	const assessment = $derived(
+		assess(
+			patient.plan,
+			visit.route,
+			visit.lines.map((l) => l.cpt.trim())
+		)
+	);
+	const fileable = $derived(canFile(assessment));
 	const snapshot = $derived(JSON.stringify({ provider, visit, patient }));
 	const stale = $derived(result.status === 'ready' && result.snapshot !== snapshot);
 	const accepted = $derived(result.status === 'ready' && !stale && enteredCode.trim() === result.code);
@@ -79,7 +89,7 @@
 
 	async function generate() {
 		attempted = true;
-		if (problems.length > 0) return;
+		if (problems.length > 0 || !fileable) return;
 		reset();
 		result = { status: 'loading' };
 		try {
@@ -232,14 +242,37 @@
 		</div>
 	</fieldset>
 
+	<fieldset class="rounded-xl border border-slate-200 bg-white p-5">
+		<legend class="px-1 text-sm font-semibold text-slate-800">¿Es reembolsable?</legend>
+		<label class="block">
+			<span class="text-sm font-medium text-slate-700">
+				Razón de la solicitud<span class="text-rose-600"> *</span>
+			</span>
+			<select
+				bind:value={visit.route}
+				class="mt-1 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
+			>
+				<option value="">— Seleccione —</option>
+				{#each ROUTES as r (r.id)}<option value={r.id}>{r.label}</option>{/each}
+			</select>
+		</label>
+		<div class="mt-4">
+			<CoverageCheck {assessment} onpick={(route) => (visit.route = route)} />
+		</div>
+	</fieldset>
+
 	{#if attempted}<Problems {problems} />{/if}
 
 	<button
 		type="submit"
-		disabled={result.status === 'loading'}
-		class="w-full rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white shadow hover:bg-teal-800 disabled:opacity-60"
+		disabled={result.status === 'loading' || assessment.status === 'not-covered'}
+		class="w-full rounded-xl bg-teal-700 px-6 py-3 font-semibold text-white shadow hover:bg-teal-800 disabled:opacity-50"
 	>
-		{result.status === 'loading' ? 'Generando…' : 'Generar código QR para revisión del paciente'}
+		{result.status === 'loading'
+			? 'Generando…'
+			: assessment.status === 'not-covered'
+				? 'Escoja una ruta reembolsable para continuar'
+				: 'Generar código QR para revisión del paciente'}
 	</button>
 </form>
 
