@@ -31,7 +31,7 @@
 		| { status: 'ready'; url: string }
 	>({ status: 'idle' });
 
-	const est = $derived(estimate(plan, service, Number.parseFloat(paid)));
+	const est = $derived(estimate(plan, service, 0));
 	const canClaim = $derived(claimable(est));
 	const formPlan = $derived<PlanId>(
 		plan === '' || plan.startsWith('fm-') ? 'otro' : (plan as PlanId)
@@ -42,7 +42,6 @@
 		...(date ? [] : ['Indique la fecha del servicio.'])
 	]);
 	const serviceName = $derived(SERVICES.find((s) => s.id === service)?.name ?? '');
-	const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
 	function resetPacket() {
 		if (packet.status === 'ready') URL.revokeObjectURL(packet.url);
@@ -123,26 +122,14 @@
 
 	<section class="rounded-xl border border-slate-200 bg-white p-5">
 		<h2 class="text-sm font-semibold text-slate-800">2 · Su servicio</h2>
-		<div class="mt-3 grid gap-4 sm:grid-cols-3">
-			<select
-				bind:value={service}
-				aria-label="Servicio"
-				class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600 sm:col-span-2"
-			>
-				<option value="">— ¿Qué servicio? —</option>
-				{#each SERVICES as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
-			</select>
-			<label class="relative block">
-				<span class="pointer-events-none absolute top-2 left-3 text-sm text-slate-500">$</span>
-				<input
-					bind:value={paid}
-					inputmode="decimal"
-					placeholder="Cuánto paga"
-					aria-label="Cuánto paga"
-					class="block w-full rounded-lg border-slate-300 pl-7 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
-				/>
-			</label>
-		</div>
+		<select
+			bind:value={service}
+			aria-label="Servicio"
+			class="mt-3 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
+		>
+			<option value="">— ¿Qué servicio? —</option>
+			{#each SERVICES as s (s.id)}<option value={s.id}>{s.name}</option>{/each}
+		</select>
 	</section>
 
 	{#if est}
@@ -157,18 +144,6 @@
 		<section class="rounded-xl border p-5 {tone}" aria-live="polite">
 			<h2 class="text-sm font-semibold opacity-80">3 · Su respuesta</h2>
 			<p class="mt-2 text-xl font-bold">{est.headline}</p>
-			{#if est.back !== null && Number.parseFloat(paid) > 0}
-				<div class="mt-4 grid grid-cols-2 gap-3">
-					<div class="rounded-lg bg-white p-3">
-						<p class="text-xs text-slate-500">Le devuelven (aprox.)</p>
-						<p class="text-2xl font-bold text-teal-800">{usd(est.back)}</p>
-					</div>
-					<div class="rounded-lg bg-white p-3">
-						<p class="text-xs text-slate-500">Usted paga</p>
-						<p class="text-2xl font-bold text-slate-900">{usd(est.owe ?? 0)}</p>
-					</div>
-				</div>
-			{/if}
 			<ul class="mt-4 space-y-2 text-sm">
 				{#each est.explanation as line (line)}<li>{line}</li>{/each}
 			</ul>
@@ -225,6 +200,15 @@
 				}}
 			>
 				<p class="text-sm font-semibold text-slate-800">Prepare su formulario</p>
+				<label class="relative block w-48">
+					<span class="text-sm font-medium text-slate-700">Cuánto pagó<span class="text-rose-600"> *</span></span>
+					<span class="pointer-events-none absolute bottom-2 left-3 text-sm text-slate-500">$</span>
+					<input
+						bind:value={paid}
+						inputmode="decimal"
+						class="mt-1 block w-full rounded-lg border-slate-300 pl-7 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
+					/>
+				</label>
 				<PatientFields bind:patient showPlan={false} />
 				{#if attempted}<Problems {problems} />{/if}
 				{#if packet.status === 'ready'}

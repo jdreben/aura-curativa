@@ -74,7 +74,6 @@ test('patient learns what comes back, then prepares the form', async ({ page }) 
 	await expect(page.getByRole('combobox', { name: 'Su plan' }).locator('option')).toHaveCount(6);
 	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('directo-plata');
 	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('especialista');
-	await page.getByRole('textbox', { name: 'Cuánto paga' }).fill('150');
 	await expect(page.getByText('No: su plan no reembolsa este servicio fuera de la red')).toBeVisible();
 	await expect(page.getByText('Con un proveedor de la red le costaría $15.')).toBeVisible();
 	await expect(page.getByText('4 · Cómo reclamarlo')).toHaveCount(0);
@@ -91,12 +90,13 @@ test('patient learns what comes back, then prepares the form', async ({ page }) 
 	await page.getByRole('combobox', { name: 'Aseguradora' }).selectOption('triple-s');
 	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('pocket-plata');
 	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('acupuntura');
-	await page.getByRole('textbox', { name: 'Cuánto paga' }).fill('90');
 	await expect(page.getByText('Sí, por Contigo Fit: $20 al mes')).toBeVisible();
 	await expect(page.getByText('4 · Cómo reclamarlo')).toBeVisible();
 
 	await page.getByRole('button', { name: 'Preparar mi formulario' }).click();
 	await expect(page.getByText('Antes de continuar, corrija:')).toBeVisible();
+	await expect(page.getByText('Indique cuánto pagó.')).toBeVisible();
+	await page.getByRole('textbox', { name: 'Cuánto pagó*' }).fill('90');
 	await page.getByRole('textbox', { name: 'Nombre*', exact: true }).fill('Carmen');
 	await page.getByLabel('Apellido paterno').fill('Ortiz');
 	await page.getByLabel('Contrato Triple-S').fill('ZUA123456789');
