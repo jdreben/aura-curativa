@@ -28,13 +28,6 @@ describe('estimate', () => {
 		expect(estimate('uno-plata', 'espejuelos', 300)?.back).toBe(75);
 	});
 
-	it('employer plans use the published average and never exceed what was paid', () => {
-		const e = estimate('ts-empleador', 'especialista', 150);
-		expect(e?.back).toBe(17);
-		expect(e?.owe).toBe(133);
-		expect(estimate('ts-empleador', 'pcp', 10)?.back).toBe(10);
-	});
-
 	it('emergencies are paid directly, not reimbursed', () => {
 		expect(estimate('pocket-oro', 'emergencia', 500)?.verdict).toBe('direct');
 	});
@@ -57,7 +50,4 @@ describe('estimate', () => {
 		expect(deadlineFrom('', 90)).toBe('');
 	});
 
-	it('unverified insurers say so', () => {
-		expect(estimate('otro', 'especialista', 150)?.verdict).toBe('unknown');
-	});
 });

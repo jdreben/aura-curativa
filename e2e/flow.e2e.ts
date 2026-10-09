@@ -69,6 +69,9 @@ test('provider prepares, patient accepts, provider prints', async ({ page, conte
 
 test('patient learns what comes back, then prepares the form', async ({ page }) => {
 	await page.goto('/');
+	await expect(page.getByRole('combobox', { name: 'Su plan' })).toHaveCount(0);
+	await page.getByRole('combobox', { name: 'Aseguradora' }).selectOption('triple-s');
+	await expect(page.getByRole('combobox', { name: 'Su plan' }).locator('option')).toHaveCount(6);
 	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('directo-plata');
 	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('especialista');
 	await page.getByRole('textbox', { name: 'Cuánto paga' }).fill('150');
@@ -77,17 +80,15 @@ test('patient learns what comes back, then prepares the form', async ({ page }) 
 	await expect(page.getByText('4 · Cómo reclamarlo')).toHaveCount(0);
 	await shot(page, 'p1-no');
 
-	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('ts-empleador');
-	await expect(page.getByText('Alrededor de $17, si su plan incluye beneficio de reembolso')).toBeVisible();
-	await expect(page.getByText('$133.00')).toBeVisible();
-	await shot(page, 'p2-employer');
-
+	await page.getByRole('combobox', { name: 'Aseguradora' }).selectOption('first-medical');
+	await expect(page.getByRole('combobox', { name: 'Su plan' })).toHaveValue('');
 	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('fm-silver');
 	await expect(page.getByText('Sí: First Medical reembolsa fuera de la red')).toBeVisible();
 	await expect(page.getByText(/90 días desde el servicio/)).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Solicitud de Reembolso de First Medical' })).toBeVisible();
 	await shot(page, 'p2b-first-medical');
 
+	await page.getByRole('combobox', { name: 'Aseguradora' }).selectOption('triple-s');
 	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('pocket-plata');
 	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('acupuntura');
 	await page.getByRole('textbox', { name: 'Cuánto paga' }).fill('90');

@@ -7,12 +7,10 @@ export type PatientPlanId =
 	| 'pocket-plata'
 	| 'pocket-oro'
 	| 'uno-plata'
-	| 'ts-empleador'
 	| 'fm-gold-plus'
 	| 'fm-gold'
 	| 'fm-silver-plus'
-	| 'fm-silver'
-	| 'otro';
+	| 'fm-silver';
 
 export type ServiceId =
 	| 'pcp'
@@ -28,28 +26,29 @@ export type ServiceId =
 	| 'espejuelos'
 	| 'emergencia';
 
-export const PATIENT_PLANS: { group: string; plans: { id: PatientPlanId; name: string }[] }[] = [
+// Order is the order shown to patients; more insurers (MCS, Menonita…) get added here.
+export const INSURERS: { id: 'triple-s' | 'first-medical'; name: string; plans: { id: PatientPlanId; name: string }[] }[] = [
 	{
-		group: 'Triple-S — plan individual 2027',
+		id: 'triple-s',
+		name: 'Triple-S',
 		plans: [
-			{ id: 'directo-bronce', name: 'Directo Bronce' },
-			{ id: 'directo-plata', name: 'Directo Plata' },
-			{ id: 'pocket-plata', name: 'Pocket Plata' },
-			{ id: 'pocket-oro', name: 'Pocket Oro' },
-			{ id: 'uno-plata', name: 'Uno Plata' }
+			{ id: 'directo-bronce', name: 'Directo Bronce 2027' },
+			{ id: 'directo-plata', name: 'Directo Plata 2027' },
+			{ id: 'pocket-plata', name: 'Pocket Plata 2027' },
+			{ id: 'pocket-oro', name: 'Pocket Oro 2027' },
+			{ id: 'uno-plata', name: 'Uno Plata 2027' }
 		]
 	},
-	{ group: 'Triple-S — otro', plans: [{ id: 'ts-empleador', name: 'Plan de mi trabajo (patrono / PYMES)' }] },
 	{
-		group: 'First Medical Directo — plan individual 2027',
+		id: 'first-medical',
+		name: 'First Medical',
 		plans: [
-			{ id: 'fm-gold-plus', name: 'Gold Plus' },
-			{ id: 'fm-gold', name: 'Gold' },
-			{ id: 'fm-silver-plus', name: 'Silver Plus' },
-			{ id: 'fm-silver', name: 'Silver' }
+			{ id: 'fm-gold-plus', name: 'Directo Gold Plus 2027' },
+			{ id: 'fm-gold', name: 'Directo Gold 2027' },
+			{ id: 'fm-silver-plus', name: 'Directo Silver Plus 2027' },
+			{ id: 'fm-silver', name: 'Directo Silver 2027' }
 		]
-	},
-	{ group: 'Otra aseguradora', plans: [{ id: 'otro', name: 'MCS, Menonita u otra' }] }
+	}
 ];
 
 export const SERVICES: { id: ServiceId; name: string }[] = [
@@ -66,22 +65,6 @@ export const SERVICES: { id: ServiceId; name: string }[] = [
 	{ id: 'espejuelos', name: 'Espejuelos o lentes de contacto (adulto)' },
 	{ id: 'emergencia', name: 'Sala de emergencia' }
 ];
-
-type Published = { label: string; tariff: number; copay: number; coinsurance: number; reimbursement: number };
-
-// Triple-S "Estimado de servicios para proveedores fuera de la red", 2027 (Ley 134-2020).
-const TS_PUBLISHED: Partial<Record<ServiceId, Published>> = {
-	pcp: { label: 'Visitas – PCP', tariff: 32, copay: 10, coinsurance: 0, reimbursement: 22 },
-	especialista: { label: 'Visitas – médicos especialistas', tariff: 32, copay: 15, coinsurance: 0, reimbursement: 17 },
-	subespecialista: { label: 'Visitas – médicos subespecialistas', tariff: 32, copay: 25, coinsurance: 0, reimbursement: 7 },
-	// No published row for mental health; specialist row is the closest visit type.
-	'salud-mental': { label: 'Visitas – médicos especialistas', tariff: 32, copay: 15, coinsurance: 0, reimbursement: 17 },
-	laboratorio: { label: 'Servicios de laboratorio', tariff: 29, copay: 0, coinsurance: 35, reimbursement: 10 },
-	radiologia: { label: 'Servicios de radiología', tariff: 48, copay: 0, coinsurance: 45, reimbursement: 22 },
-	'terapia-fisica': { label: 'Terapia física', tariff: 20, copay: 15, coinsurance: 0, reimbursement: 5 },
-	quiropractico: { label: 'Manipulaciones quiroprácticas', tariff: 27, copay: 15, coinsurance: 0, reimbursement: 12 },
-	cirugia: { label: 'Cirugía ambulatoria', tariff: 421, copay: 200, coinsurance: 0, reimbursement: 221 }
-};
 
 type IndividualPlan = 'directo-bronce' | 'directo-plata' | 'pocket-plata' | 'pocket-oro' | 'uno-plata';
 
@@ -120,7 +103,7 @@ export const CLAIM_RULES: Record<Insurer, { deadlineDays: number; send: string; 
 
 export type Estimate = {
 	verdict: 'reimbursable' | 'not-reimbursable' | 'direct' | 'unknown';
-	insurer: Insurer | null;
+	insurer: Insurer;
 	headline: string;
 	back: number | null;
 	owe: number | null;
@@ -132,21 +115,17 @@ export type Estimate = {
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
-const insurerOf = (plan: PatientPlanId): Insurer | null =>
-	plan.startsWith('fm-') ? 'first-medical' : plan === 'otro' ? null : 'triple-s';
+const insurerOf = (plan: PatientPlanId): Insurer => (plan.startsWith('fm-') ? 'first-medical' : 'triple-s');
 
 export function estimate(plan: PatientPlanId | '', service: ServiceId | '', paid: number): Estimate | null {
 	if (!plan || !service) return null;
-	const insurer = insurerOf(plan);
-	const e = estimateFor(plan, service, paid);
-	return { ...e, insurer: e.verdict === 'unknown' && plan === 'otro' ? null : insurer };
+	return { ...estimateFor(plan, service, paid), insurer: insurerOf(plan) };
 }
 
 function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omit<Estimate, 'insurer'> {
 	const p = Math.max(0, paid || 0);
-	const published = TS_PUBLISHED[service];
 
-	if (service === 'emergencia' && plan !== 'otro') {
+	if (service === 'emergencia') {
 		return {
 			verdict: 'direct',
 			headline: 'Las emergencias se cubren aunque el hospital esté fuera de la red',
@@ -260,44 +239,12 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 		};
 	}
 
-	if (plan === 'ts-empleador') {
-		if (!published) {
-			return {
-				verdict: 'unknown',
-				headline: 'Depende de su plan',
-				back: null,
-				owe: null,
-				explanation: ['Triple-S no publica un estimado fuera de la red para este servicio. Busque "reembolso" en el certificado de su plan.'],
-				alternatives: service === 'acupuntura' ? ['Si su plan incluye Triple-S Natural, la acupuntura dentro de la red cuesta alrededor de $15.'] : [],
-				route: null,
-				conditions: []
-			};
-		}
-		const back = Math.min(published.reimbursement, p || published.reimbursement);
-		return {
-			verdict: 'reimbursable',
-			headline: `Alrededor de ${money(back)}, si su plan incluye beneficio de reembolso`,
-			back,
-			owe: p ? Math.max(0, p - back) : null,
-			explanation: [
-				`Triple-S reembolsa según su tarifa contratada, no según lo que usted pagó. Para "${published.label}" la tarifa promedio es ${money(published.tariff)}, menos ${published.coinsurance ? `${published.coinsurance}% de coaseguro` : `${money(published.copay)} de copago`}: un reembolso promedio de ${money(published.reimbursement)}.`,
-				'Solo aplica si su plan incluye beneficio de reembolso. Busque "reembolso" en el certificado de su plan.'
-			],
-			alternatives: [`Dentro de la red pagaría alrededor de ${published.coinsurance ? `${published.coinsurance}% de coaseguro` : money(published.copay)}.`],
-			route: 'routine',
-			conditions: []
-		};
-	}
-
 	return {
 		verdict: 'unknown',
 		headline: 'Aún no hemos verificado este plan',
 		back: null,
 		owe: null,
-		explanation: [
-			'Algunos planes sí reembolsan fuera de la red (por ejemplo, planes PPO y muchos planes de patrono). Busque "reembolso" o "fuera de la red" en su póliza.',
-			'Por ley (Ley 134-2020) cada aseguradora publica un estimado de costos fuera de la red. MCS: mcs.com.pr, "Estimado de Costo".'
-		],
+		explanation: ['Busque "reembolso" o "fuera de la red" en su póliza.'],
 		alternatives: [],
 		route: null,
 		conditions: []

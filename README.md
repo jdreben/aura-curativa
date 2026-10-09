@@ -19,15 +19,15 @@ We read the 2027 policies and published estimates so patients don't have to:
   A routine out-of-network visit in PR is not reimbursable. A few named routes are: Contigo Fit ($20/month
   for acupuncture, massage, reflexology), adult glasses ($75/year), and 100% minus copay when no network
   provider offers the service.
-- **Triple-S employer/PYMES plans** with a reimbursement benefit pay the *contracted rate* minus copay.
-  Triple-S publishes the averages under Ley 134-2020: a specialist visit comes back at about **$17**.
+- Where Triple-S does reimburse (plans with a reimbursement benefit), it pays its *contracted rate* minus
+  copay, not what the patient paid. Its published average for a specialist visit is about **$17**.
 - **First Medical Directo 2027** (Gold Plus, Gold, Silver Plus, Silver) does reimburse out of network:
   the highest in-network rate for the same specialty, minus copay or coinsurance. Claims are due within
   **90 days**. Acupuncture is excluded.
 
 ## What the patient does
 
-1. **Su plan.** Pick the plan.
+1. **Su plan.** Pick the insurer (Triple-S or First Medical), then the exact 2027 individual plan.
 2. **Su servicio.** Pick the service and enter what it costs.
 3. **Su respuesta.** Reimbursable or not, the estimate back and what they'll still owe, the reasoning,
    and cheaper alternatives (an in-network copay, Triple-S Natural, SALUS or Metro Pavía at $0).
@@ -83,7 +83,7 @@ scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 - Estimates, not coverage determinations. Plans change every year.
 - First Medical doesn't publish its fee schedule, so the app shows the formula and the copay and points
   the patient to First Medical's estimate line (1-888-318-0274), not a dollar figure.
-- MCS, Menonita, Bella Vista and Ryder aren't verified yet; the app says so.
-- Employer plans vary; the app assumes a reimbursement benefit and tells the patient to confirm it.
+- Only 2027 individual plans from Triple-S and First Medical for now. MCS, Menonita, Bella Vista, Ryder
+  and employer plans come next.
 - Signatures and the provider's stamp stay on paper.
 - The provider flow's intake-record import is simulated with three synthetic patients.

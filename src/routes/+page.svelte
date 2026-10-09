@@ -5,8 +5,8 @@
 	import Problems from '#lib/components/Problems.svelte';
 	import { emptyPatient, emptyProvider, emptyVisit, patientProblems } from '#lib/claim.ts';
 	import type { ServiceLine } from '#lib/claim.ts';
-	import { CLAIM_RULES, PATIENT_PLANS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
-	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
+	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
+	import type { Insurer, PatientPlanId, ServiceId } from '#lib/estimate.ts';
 	import { packetObjectUrl } from '#lib/pdf/browser.ts';
 	import { TRIPLE_S } from '#lib/pdf/triple-s.ts';
 	import type { PlanId } from '#lib/plans.ts';
@@ -16,7 +16,9 @@
 		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 	};
 
+	let insurer = $state<Insurer | ''>('');
 	let plan = $state<PatientPlanId | ''>('');
+	const insurerPlans = $derived(INSURERS.find((i) => i.id === insurer)?.plans ?? []);
 	let service = $state<ServiceId | ''>('');
 	let paid = $state('');
 	let date = $state(today());
@@ -32,7 +34,7 @@
 	const est = $derived(estimate(plan, service, Number.parseFloat(paid)));
 	const canClaim = $derived(claimable(est));
 	const formPlan = $derived<PlanId>(
-		plan === '' || plan === 'ts-empleador' || plan === 'otro' || plan.startsWith('fm-') ? 'otro' : (plan as PlanId)
+		plan === '' || plan.startsWith('fm-') ? 'otro' : (plan as PlanId)
 	);
 	const problems = $derived([
 		...patientProblems({ ...patient, plan: formPlan }),
@@ -92,18 +94,31 @@
 <div class="mx-auto mt-8 max-w-2xl space-y-6">
 	<section class="rounded-xl border border-slate-200 bg-white p-5">
 		<h2 class="text-sm font-semibold text-slate-800">1 · Su plan</h2>
-		<select
-			bind:value={plan}
-			aria-label="Su plan"
-			class="mt-3 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
-		>
-			<option value="">— Seleccione su plan —</option>
-			{#each PATIENT_PLANS as g (g.group)}
-				<optgroup label={g.group}>
-					{#each g.plans as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
-				</optgroup>
-			{/each}
-		</select>
+		<div class="mt-3 grid gap-4 sm:grid-cols-2">
+			<select
+				value={insurer}
+				onchange={(e) => {
+					insurer = e.currentTarget.value as Insurer | '';
+					plan = '';
+				}}
+				aria-label="Aseguradora"
+				class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
+			>
+				<option value="">— Su aseguradora —</option>
+				{#each INSURERS as i (i.id)}<option value={i.id}>{i.name}</option>{/each}
+			</select>
+			{#if insurer}
+				<select
+					bind:value={plan}
+					aria-label="Su plan"
+					class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-600 focus:ring-teal-600"
+				>
+					<option value="">— Su plan —</option>
+					{#each insurerPlans as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
+				</select>
+			{/if}
+		</div>
+		<p class="mt-2 text-xs text-slate-500">Planes individuales 2027. Pronto: MCS, Plan de Salud Menonita y otros.</p>
 	</section>
 
 	<section class="rounded-xl border border-slate-200 bg-white p-5">
@@ -255,8 +270,7 @@
 	{/if}
 
 	<p class="text-xs text-slate-500">
-		Fuentes: pólizas 2027 de Triple-S (Directo, Pocket, Uno) y First Medical Directo, y el estimado de
-		servicios fuera de la red que Triple-S publica bajo la Ley 134-2020. Son estimados, no una
-		determinación de cubierta.
+		Fuentes: pólizas 2027 de los planes individuales de Triple-S (Directo, Pocket, Uno) y First Medical
+		Directo. Son estimados, no una determinación de cubierta.
 	</p>
 </div>
