@@ -9,9 +9,9 @@
 	import SendTo from '#lib/components/SendTo.svelte';
 	import { emptyPatient, patientFullName } from '#lib/claim.ts';
 	import { demoPatients } from '#lib/demo.ts';
-	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, deadlineWords, estimate } from '#lib/estimate.ts';
+	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
-	import { appointmentRequest, letterParagraphs, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
+	import { appointmentRequest, benefitExplanation, letterParagraphs, packetSteps, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
 	import { buildPatientPacket } from '#lib/pdf/patient-packet.ts';
 	import { isoToForm } from '#lib/pdf/triple-s.ts';
 
@@ -160,25 +160,24 @@
 			const res = await fetch(asset(file));
 			if (!res.ok) throw new Error(`no se pudo cargar el formulario (${res.status})`);
 			const template = new Uint8Array(await res.arrayBuffer());
-			const signStep =
-				insurer === 'triple-s' ? 'Firme y feche la sección D del formulario.' : 'Firme y feche la sección 4 del formulario.';
-			const steps = received
-				? [
-						signStep,
-						insurer === 'triple-s'
-							? 'Su proveedor completa y firma la sección E, y le da un recibo original timbrado y firmado.'
-							: 'Su proveedor le da un recibo original con su NPI, el diagnóstico (ICD-10) y los códigos CPT.',
-						'Firme la carta de solicitud.',
-						...(est?.conditions ?? []),
-						`Envíe todo antes del ${deadline || 'plazo de su plan'}.`
-					]
-				: [
-						'Llévelo a su cita o entrégueselo al proveedor.',
-						...(preauth ? [preauth] : []),
-						...(est?.conditions ?? []),
-						appointmentRequest(insurer),
-						`Después del servicio, añada la fecha y lo pagado, firme y envíe dentro de ${deadlineWords(rules.deadlineDays)}.`
-					];
+			const steps = packetSteps({
+				insurer,
+				received: !!received,
+				preauth,
+				conditions: est?.conditions ?? [],
+				deadline,
+				deadlineDays: rules.deadlineDays
+			});
+			const letterInput = {
+				insurer,
+				route,
+				planName,
+				serviceName,
+				date: isoToForm(date),
+				paid: Number.parseFloat(paid).toFixed(2),
+				providerName,
+				answers: $state.snapshot(answers)
+			};
 			const bytes = await buildPatientPacket(template, {
 				insurer,
 				planName,
@@ -193,16 +192,8 @@
 				expected: est?.benefit ?? '',
 				deadline,
 				steps,
-				letter: letterParagraphs({
-					insurer,
-					route,
-					planName,
-					serviceName,
-					date: isoToForm(date),
-					paid: Number.parseFloat(paid).toFixed(2),
-					providerName,
-					answers: $state.snapshot(answers)
-				})
+				letter: letterParagraphs(letterInput),
+				explanation: benefitExplanation({ ...letterInput, benefit: est?.benefit ?? '' })
 			});
 			const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
 			pdf = { status: 'ready', url: URL.createObjectURL(blob), blob };

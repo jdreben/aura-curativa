@@ -149,7 +149,7 @@ test('patient who already got the service: guided form, review, fix, send to pro
 		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
-	expect(pdf.getPageCount()).toBe(4);
+	expect(pdf.getPageCount()).toBe(5);
 });
 
 test('patient before the service: preauthorization warning, form to bring', async ({ page }) => {
@@ -182,7 +182,7 @@ test('patient before the service: preauthorization warning, form to bring', asyn
 		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
-	expect(pdf.getPageCount()).toBe(2);
+	expect(pdf.getPageCount()).toBe(3);
 });
 
 test('?demo fills the wizard so it clicks straight through', async ({ page }) => {

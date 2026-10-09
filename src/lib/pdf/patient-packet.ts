@@ -3,6 +3,7 @@ import type { PDFFont, PDFPage } from 'pdf-lib';
 import type { Patient } from '../claim.ts';
 import { emptyProvider, emptyVisit, patientFullName } from '../claim.ts';
 import type { Insurer } from '../estimate.ts';
+import type { BenefitExplanation } from '../justify.ts';
 import { CLAIM_RULES, deadlineWords } from '../estimate.ts';
 import type { RouteId } from '../plans.ts';
 import { fillFirstMedical, FIRST_MEDICAL } from './first-medical.ts';
@@ -23,6 +24,7 @@ export type PatientPacketInput = {
 	deadline: string;
 	steps: string[];
 	letter: string[];
+	explanation: BenefitExplanation;
 };
 
 type Fonts = { regular: PDFFont; bold: PDFFont };
@@ -73,10 +75,11 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	y -= 14;
 	page.drawText('Pasos', { x: 50, y, size: 12, font: f.bold });
 	y -= 20;
-	for (const s of i.steps) {
+	i.steps.forEach((s, n) => {
 		page.drawRectangle({ x: 52, y: y - 2, width: 9, height: 9, borderColor: BLACK, borderWidth: 0.75 });
-		y = paragraph(page, s, 70, y, f.regular, 10.5, 480) - 6;
-	}
+		page.drawText(`${n + 1}.`, { x: 68, y, size: 10.5, font: f.bold });
+		y = paragraph(page, s, 86, y, f.regular, 10.5, 464) - 6;
+	});
 	y -= 12;
 	page.drawText('Cómo enviar', { x: 50, y, size: 12, font: f.bold });
 	y -= 20;
@@ -98,6 +101,55 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	);
 	page.drawText(
 		winAnsi('Generado en su dispositivo por Healing Aura. Ningún dato se guardó en un servidor. No es asesoría legal ni de seguros.'),
+		{ x: 50, y: 48, size: 8.5, font: f.regular, color: GRAY }
+	);
+}
+
+function drawExplanation(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
+	const page = doc.addPage([612, 792]);
+	const insurerName = i.insurer === 'triple-s' ? TRIPLE_S.name : FIRST_MEDICAL.name;
+	let y = 730;
+	y = paragraph(page, 'Explicación de Beneficios para todos los servicios o suplidos reclamados', 50, y, f.bold, 15, 512) - 8;
+	const rows: [string, string][] = [
+		['Asegurado', patientFullName(i.patient)],
+		['Contrato', i.patient.contractNumber.toUpperCase()],
+		['Plan', `${i.planName} (${insurerName})`]
+	];
+	for (const [k, v] of rows) {
+		page.drawText(winAnsi(k), { x: 50, y, size: 10.5, font: f.regular, color: GRAY });
+		y = paragraph(page, v, 160, y, f.regular, 10.5, 400) - 4;
+	}
+	y -= 14;
+	page.drawText(winAnsi('Servicios o suplidos reclamados'), { x: 50, y, size: 12, font: f.bold });
+	y -= 20;
+	const cols = [50, 130, 330, 490];
+	['Fecha', 'Servicio o suplido', 'Proveedor', 'Pagado'].forEach((h, n) =>
+		page.drawText(h, { x: cols[n], y, size: 9.5, font: f.bold, color: GRAY })
+	);
+	y -= 6;
+	page.drawLine({ start: { x: 50, y }, end: { x: 562, y }, thickness: 0.5, color: GRAY });
+	y -= 14;
+	const pending = 'Pendiente';
+	const cells = [
+		i.received && i.date ? isoToForm(i.date) : pending,
+		i.serviceName,
+		i.providerName || pending,
+		i.received && i.paid ? `$${i.paid}` : pending
+	];
+	const bottoms = cells.map((c, n) => paragraph(page, c, cols[n], y, f.regular, 10, n === 1 ? 190 : n === 2 ? 150 : 70));
+	y = Math.min(...bottoms) - 4;
+	page.drawLine({ start: { x: 50, y: y + 8 }, end: { x: 562, y: y + 8 }, thickness: 0.5, color: GRAY });
+	y -= 14;
+	page.drawText(winAnsi('Reembolso solicitado'), { x: 50, y, size: 10.5, font: f.regular, color: GRAY });
+	y = paragraph(page, i.expected, 160, y, f.regular, 10.5, 400) - 18;
+	page.drawText(winAnsi('Base en la póliza'), { x: 50, y, size: 12, font: f.bold });
+	y -= 18;
+	y = paragraph(page, i.explanation.basis, 50, y, f.regular, 10.5, 512) - 16;
+	page.drawText(winAnsi('Por qué procede el reembolso'), { x: 50, y, size: 12, font: f.bold });
+	y -= 18;
+	for (const para of i.explanation.paragraphs) y = paragraph(page, para, 50, y, f.regular, 10.5, 512) - 8;
+	page.drawText(
+		winAnsi('Preparado por el asegurado con Healing Aura a partir de la póliza 2027. No es una determinación de la aseguradora.'),
 		{ x: 50, y: 48, size: 8.5, font: f.regular, color: GRAY }
 	);
 }
@@ -174,6 +226,7 @@ export async function buildPatientPacket(template: Uint8Array, i: PatientPacketI
 					lines
 				});
 	for (const pg of await out.copyPages(form, form.getPageIndices())) out.addPage(pg);
+	drawExplanation(out, fonts, i);
 	if (i.received) drawLetter(out, fonts, i);
 	return out.save();
 }

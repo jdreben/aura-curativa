@@ -1,6 +1,8 @@
 // Plan-specific questions and the justification letter. Sources: docs/triple-s-2027-reembolsos.md, docs/first-medical-2027-reembolsos.md.
 import type { Insurer, ServiceId } from './estimate.ts';
+import { deadlineWords } from './estimate.ts';
 import type { RouteId } from './plans.ts';
+import { routeById } from './plans.ts';
 
 export type Question = { id: string; text: string; warnIfNo?: string };
 
@@ -79,6 +81,96 @@ export function letterParagraphs(l: LetterInput): string[] {
 		];
 	}
 	return [`Solicito el reembolso por ${what} conforme a mi póliza ${l.planName}.`, closing];
+}
+
+export type BenefitExplanation = { basis: string; paragraphs: string[] };
+
+// The "why you are entitled" page that goes with every claim; written for the insurer's reviewer.
+export function benefitExplanation(l: LetterInput & { benefit: string }): BenefitExplanation {
+	const service = l.serviceName.toLowerCase();
+	if (l.insurer === 'first-medical') {
+		return {
+			basis:
+				'Póliza First Medical Directo 2027 (FMHP-PD-2027): sección "Reembolso de gastos cubiertos por servicios obtenidos fuera de la red" y sección "Ley Núm. 134-2020"; Artículo 48.050 del Código de Seguros de Salud de Puerto Rico.',
+			paragraphs: [
+				`${l.planName} es un plan de libre selección. La póliza dispone que First Medical reembolsará al suscriptor el 100% de los gastos cubiertos que sean médicamente necesarios, según las tarifas contratadas por su red International Medical Card para un proveedor de una especialidad similar, menos el copago que aplique.`,
+				`El servicio o suplido reclamado, ${service}, está cubierto por la póliza. Beneficio aplicable: ${l.benefit}.`,
+				l.answers['sin-red']
+					? 'No hay un proveedor de esta especialidad en el directorio de First Medical. Conforme al inciso B del Artículo 48.050, procede el reembolso del 100% de los gastos incurridos, menos el copago que aplique.'
+					: 'El proveedor no participa en la red de First Medical. Procede el reembolso a la tarifa mayor contratada con un proveedor de la misma especialidad, menos el copago o coaseguro que aplique.',
+				'La póliza requiere someter la solicitud dentro de 90 días desde la fecha del servicio, con el recibo original del proveedor, el diagnóstico (ICD-10) y los códigos CPT.'
+			]
+		};
+	}
+	if (l.route === 'contigo-fit') {
+		const met = [
+			l.answers.hra && 'completó la evaluación de salud (HRA) en Mi Triple-S',
+			l.answers.preventiva && 'hizo su visita preventiva anual',
+			l.answers.licencia && 'el proveedor está certificado y licenciado'
+		].filter(Boolean);
+		return {
+			basis: `Póliza ${l.planName}: beneficio Contigo Fit.`,
+			paragraphs: [
+				'El beneficio Contigo Fit reembolsa $20 mensuales, hasta 12 meses, por acupuntura, masaje terapéutico o reflexología con un proveedor certificado y licenciado.',
+				`El servicio reclamado, ${service}, es uno de los servicios que cubre Contigo Fit. Beneficio aplicable: ${l.benefit}.`,
+				met.length
+					? `El asegurado cumple con los requisitos del beneficio: ${met.join(', ')}.`
+					: 'Requisitos del beneficio: evaluación de salud (HRA) en Mi Triple-S, visita preventiva anual y proveedor certificado y licenciado.',
+				'La póliza permite someter la solicitud hasta un año desde la fecha del servicio.'
+			]
+		};
+	}
+	if (l.route === 'vision') {
+		return {
+			basis: `Póliza ${l.planName}: exclusión 52, inciso (a), y beneficio de espejuelos o lentes de contacto para adultos.`,
+			paragraphs: [
+				'La póliza reembolsa espejuelos o lentes de contacto para adultos (21 años o más) comprados en una óptica no participante, hasta $75 por año póliza. Es una de las excepciones expresas a la exclusión de proveedores no participantes.',
+				`El suplido reclamado, ${service}, está dentro de este beneficio. Beneficio aplicable: ${l.benefit}.`,
+				'La póliza permite someter la solicitud hasta un año desde la fecha del servicio.'
+			]
+		};
+	}
+	const route = routeById(l.route);
+	return {
+		basis: `Póliza ${l.planName}.`,
+		paragraphs: [
+			...(route ? [route.reason] : []),
+			...(l.benefit ? [`Beneficio aplicable: ${l.benefit}.`] : [])
+		]
+	};
+}
+
+export type StepsInput = {
+	insurer: Insurer;
+	received: boolean;
+	preauth: string | null;
+	conditions: string[];
+	deadline: string;
+	deadlineDays: number;
+};
+
+// In the order the patient does them: requirements, then the provider, then signatures, then mailing.
+export function packetSteps(s: StepsInput): string[] {
+	const send = (when: string) =>
+		`Envíe el formulario, la Explicación de Beneficios${s.received ? ', la carta de solicitud' : ''} y el recibo original ${when}. Guarde una copia.`;
+	if (s.received) {
+		return [
+			...s.conditions,
+			s.insurer === 'triple-s'
+				? 'Pida a su proveedor que complete y firme la sección E y le dé un recibo original, timbrado y firmado.'
+				: 'Pida a su proveedor un recibo original con su NPI, el diagnóstico (ICD-10) y los códigos CPT.',
+			s.insurer === 'triple-s' ? 'Firme y feche la sección D del formulario.' : 'Firme y feche la sección 4 del formulario.',
+			'Firme la carta de solicitud.',
+			send(`antes del ${s.deadline || 'plazo de su plan'}`)
+		];
+	}
+	return [
+		...(s.preauth ? [s.preauth] : []),
+		...s.conditions,
+		`Lleve este paquete a su cita. ${appointmentRequest(s.insurer)}`,
+		'Después del servicio, escriba la fecha y lo pagado en el formulario, y fírmelo.',
+		send(`dentro de ${deadlineWords(s.deadlineDays)} desde la fecha del servicio`)
+	];
 }
 
 export function providerRequest(insurer: Insurer): string {
