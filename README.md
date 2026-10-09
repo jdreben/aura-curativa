@@ -55,6 +55,11 @@ fields; `scripts/list-fields.mjs` prints them. `src/lib/pdf/triple-s.ts` maps ou
 fields by name and flattens the result so every printer renders the same thing. Adding an insurer means
 adding one more mapping file.
 
+## Research
+
+- [Triple-S 2027 individual plans: what gets reimbursed](docs/triple-s-2027-reembolsos.md) — routes,
+  exclusions, labs, claim rules and deadlines across five plans.
+
 ## Known limits
 
 - Triple-S only so far. MCS (commercial and Classicare) is next — the forms are public and ask for the
