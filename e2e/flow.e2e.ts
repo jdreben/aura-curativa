@@ -103,7 +103,6 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	await page.getByRole('button', { name: 'Continuar' }).click();
 	await expect(page.getByText('Indique cuánto pagó.')).toBeVisible();
 	await page.getByRole('textbox', { name: 'Cuánto pagó ($)*' }).fill('90');
-	await page.getByRole('textbox', { name: 'Nombre del proveedor' }).fill('Dra. Isabel Rivera');
 	await page.getByRole('button', { name: 'Continuar' }).click();
 
 	await page.getByRole('button', { name: 'Continuar' }).click();
@@ -141,7 +140,7 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	await expect(page.getByRole('textbox', { name: 'Mensaje' })).toHaveValue(/complete y firme la sección E/);
 	const href = (await page.getByRole('link', { name: 'Abrir en mi email' }).getAttribute('href')) ?? '';
 	expect(href).toMatch(/^mailto:dra\.rivera%40example\.com\?cc=carmen%40example\.com/);
-	expect(decodeURIComponent(href)).toContain('Saludos, Dra. Isabel Rivera:');
+	expect(decodeURIComponent(href)).toContain('Saludos:');
 	await shot(page, 'w3-send');
 
 	const [download] = await Promise.all([

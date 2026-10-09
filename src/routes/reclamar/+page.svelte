@@ -40,8 +40,6 @@
 	let received = $state<boolean | null>(null);
 	let date = $state(today());
 	let paid = $state('');
-	let providerName = $state('');
-	let providerSpecialty = $state('');
 	let answers = $state<Record<string, boolean>>({});
 	let patient = $state({ ...emptyPatient(), state: 'PR' });
 	let editing = $state(false);
@@ -79,7 +77,7 @@
 
 	const emailBody = $derived(
 		[
-			`Saludos${providerName ? `, ${providerName}` : ''}:`,
+			'Saludos:',
 			'',
 			`Estoy solicitando a ${insurerEntry?.name ?? 'mi plan'} el reembolso de ${serviceName.toLowerCase()}${received ? ` del ${isoToForm(date)}` : ''}.`,
 			providerRequest(insurer),
@@ -133,8 +131,6 @@
 	function fillDemo() {
 		const demo = demoPatients()[insurer === 'triple-s' ? 0 : 1].patient;
 		paid = route === 'vision' ? '180' : '90';
-		providerName = 'Dra. Isabel Rivera Colón';
-		providerSpecialty = serviceName.split(',')[0];
 		answers = Object.fromEntries(questions.map((q) => [q.id, true]));
 		patient = { ...demo, contractNumber: insurer === 'triple-s' ? demo.contractNumber : 'FM0012345678' };
 		myEmail = 'paciente@example.com';
@@ -150,6 +146,7 @@
 	}
 
 	async function generate() {
+		if (!serviceId) return;
 		if (pdf.status === 'ready') URL.revokeObjectURL(pdf.url);
 		pdf = { status: 'loading' };
 		step = 'review';
@@ -175,19 +172,17 @@
 				serviceName,
 				date: isoToForm(date),
 				paid: Number.parseFloat(paid).toFixed(2),
-				providerName,
 				answers: $state.snapshot(answers)
 			};
 			const bytes = await buildPatientPacket(template, {
 				insurer,
 				planName,
 				route,
+				serviceId,
 				serviceName,
 				received: !!received,
 				date,
 				paid: received ? Number.parseFloat(paid).toFixed(2) : '',
-				providerName,
-				providerSpecialty,
 				patient: $state.snapshot(patient),
 				expected: est?.benefit ?? '',
 				deadline,
@@ -279,8 +274,6 @@
 				<div class="mt-4 grid gap-4 sm:grid-cols-2">
 					<Field label="Fecha del servicio" type="date" bind:value={date} required />
 					<Field label="Cuánto pagó ($)" bind:value={paid} inputmode="decimal" required />
-					<Field label="Nombre del proveedor" bind:value={providerName} placeholder="Dra. Isabel Rivera" />
-					<Field label="Especialidad del proveedor" bind:value={providerSpecialty} placeholder="Acupuntura" />
 				</div>
 				{#if attempted}<div class="mt-4"><Problems problems={detailProblems} /></div>{/if}
 			{:else if step === 'questions'}
@@ -376,7 +369,6 @@
 							<dt class="text-slate-500">Fecha</dt><dd>{isoToForm(date)}</dd>
 							<dt class="text-slate-500">Pagó</dt><dd>${Number.parseFloat(paid).toFixed(2)}</dd>
 						{/if}
-						{#if providerName}<dt class="text-slate-500">Proveedor</dt><dd>{providerName}{providerSpecialty ? ` · ${providerSpecialty}` : ''}</dd>{/if}
 					</dl>
 					<a
 						href={pdf.url}
@@ -400,8 +392,6 @@
 						<div class="mt-4 grid gap-4 sm:grid-cols-2">
 							<Field label="Fecha del servicio" type="date" bind:value={date} required />
 							<Field label="Cuánto pagó ($)" bind:value={paid} inputmode="decimal" required />
-							<Field label="Nombre del proveedor" bind:value={providerName} />
-							<Field label="Especialidad del proveedor" bind:value={providerSpecialty} />
 						</div>
 					{/if}
 					<div class="mt-4"><PatientFields bind:patient showPlan={false} /></div>

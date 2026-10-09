@@ -2,7 +2,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import type { PDFFont, PDFPage } from 'pdf-lib';
 import type { Patient } from '../claim.ts';
 import { emptyProvider, emptyVisit, patientFullName } from '../claim.ts';
-import type { Insurer } from '../estimate.ts';
+import type { Insurer, ServiceId } from '../estimate.ts';
 import type { BenefitExplanation } from '../justify.ts';
 import { CLAIM_RULES, deadlineWords } from '../estimate.ts';
 import type { RouteId } from '../plans.ts';
@@ -13,12 +13,11 @@ export type PatientPacketInput = {
 	insurer: Insurer;
 	planName: string;
 	route: RouteId;
+	serviceId: ServiceId;
 	serviceName: string;
 	received: boolean;
 	date: string;
 	paid: string;
-	providerName: string;
-	providerSpecialty: string;
 	patient: Patient;
 	expected: string;
 	deadline: string;
@@ -122,8 +121,8 @@ function drawExplanation(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	y -= 14;
 	page.drawText(winAnsi('Servicios o suplidos reclamados'), { x: 50, y, size: 12, font: f.bold });
 	y -= 20;
-	const cols = [50, 130, 330, 490];
-	['Fecha', 'Servicio o suplido', 'Proveedor', 'Pagado'].forEach((h, n) =>
+	const cols = [50, 130, 490];
+	['Fecha', 'Servicio o suplido', 'Pagado'].forEach((h, n) =>
 		page.drawText(h, { x: cols[n], y, size: 9.5, font: f.bold, color: GRAY })
 	);
 	y -= 6;
@@ -133,10 +132,9 @@ function drawExplanation(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	const cells = [
 		i.received && i.date ? isoToForm(i.date) : pending,
 		i.serviceName,
-		i.providerName || pending,
 		i.received && i.paid ? `$${i.paid}` : pending
 	];
-	const bottoms = cells.map((c, n) => paragraph(page, c, cols[n], y, f.regular, 10, n === 1 ? 190 : n === 2 ? 150 : 70));
+	const bottoms = cells.map((c, n) => paragraph(page, c, cols[n], y, f.regular, 10, n === 1 ? 340 : 70));
 	y = Math.min(...bottoms) - 4;
 	page.drawLine({ start: { x: 50, y: y + 8 }, end: { x: 562, y: y + 8 }, thickness: 0.5, color: GRAY });
 	y -= 14;
@@ -196,23 +194,24 @@ export async function buildPatientPacket(template: Uint8Array, i: PatientPacketI
 	};
 	drawCover(out, fonts, i);
 
-	const lines = i.received ? [{ date: i.date, description: i.serviceName, paid: i.paid }] : [];
+	// The service comes from the patient's selection; the provider's fields stay blank for the provider.
+	const lines = [{ date: i.received ? i.date : '', description: i.serviceName, paid: i.received ? i.paid : '' }];
 	const form =
 		i.insurer === 'triple-s'
 			? await fillTripleS(
 					template,
-					{ ...emptyProvider(), name: i.providerName, specialty: i.providerSpecialty },
+					emptyProvider(),
 					{
 						...emptyVisit(),
 						route: i.route,
 						lines: lines.map((l) => ({
 							dateFrom: l.date,
 							dateTo: l.date,
-							placeOfService: '11',
+							placeOfService: '',
 							description: l.description,
 							cpt: '',
 							modifier: '',
-							units: '1',
+							units: '',
 							amountPaid: l.paid
 						}))
 					},
@@ -220,9 +219,7 @@ export async function buildPatientPacket(template: Uint8Array, i: PatientPacketI
 				)
 			: await fillFirstMedical(template, {
 					patient: i.patient,
-					vision: i.route === 'vision',
-					providerName: i.providerName,
-					providerSpecialty: i.providerSpecialty,
+					vision: i.route === 'vision' || i.serviceId === 'espejuelos',
 					lines
 				});
 	for (const pg of await out.copyPages(form, form.getPageIndices())) out.addPage(pg);

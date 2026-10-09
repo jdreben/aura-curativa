@@ -11,8 +11,6 @@ export const FIRST_MEDICAL = {
 export type FirstMedicalForm = {
 	patient: Patient & { dob: string };
 	vision: boolean;
-	providerName: string;
-	providerSpecialty: string;
 	lines: { date: string; description: string; paid: string }[];
 };
 
@@ -45,9 +43,8 @@ export async function fillFirstMedical(template: Uint8Array, f: FirstMedicalForm
 	w(p.phone, 40, 501, 10, 255);
 	w(p.altPhone, 310, 501, 10, 255);
 	w('X', p.hasOtherCoverage ? 149 : 178, 474, 9);
+	// "Proveedor no acepta el plan" is the claim reason; the provider's own fields stay blank for them to fill.
 	w('X', 212, 415, 9);
-	w(f.providerName, 40, 392, 10, 255);
-	w(f.providerSpecialty, 362, 403, 9, 200);
 
 	const rows = [338, 316, 294, 272];
 	f.lines.slice(0, rows.length).forEach((l, i) => {

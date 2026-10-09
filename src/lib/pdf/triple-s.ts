@@ -34,7 +34,7 @@ function setText(form: PDFForm, font: PDFFont, name: string, value: string, maxS
 	field.setFontSize(size);
 }
 
-const nonEmptyLines = (visit: Visit) => visit.lines.filter((l) => l.cpt.trim() || l.amountPaid.trim());
+const nonEmptyLines = (visit: Visit) => visit.lines.filter((l) => l.cpt.trim() || l.amountPaid.trim() || l.description.trim());
 
 export async function fillTripleS(
 	template: Uint8Array,
@@ -76,7 +76,7 @@ export async function fillTripleS(
 
 	set('30 NOMBRE DEL PROVEEDOR  SUPLIDOR', provider.name);
 	set('NationalProvID', provider.npi);
-	form.getRadioGroup('Group7').select('NPI');
+	if (provider.npi.trim()) form.getRadioGroup('Group7').select('NPI');
 	set('32 NÚMERO LICENCIA DEL PROVEEDOR', provider.license);
 	const address = form.getTextField('33 DIRECCIÓN PROVEEDOR  SUPLIDOR');
 	address.enableMultiline();
@@ -84,7 +84,7 @@ export async function fillTripleS(
 	address.setFontSize(8);
 	set('34 ESPECIALIDAD DEL PROVEEDOR', provider.specialty);
 	set('35 NÚMERO DE CUENTARECORD PACIENTE', visit.accountNumber);
-	form.getRadioGroup('Group8').select('Puerto Rico');
+	if (provider.name.trim()) form.getRadioGroup('Group8').select('Puerto Rico');
 	set('37 NÚMERO TELÉFONO PROVEEDOR', provider.phone);
 	set('Diag', visit.diagnosisDescription);
 	set(

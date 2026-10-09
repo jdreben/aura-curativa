@@ -44,12 +44,11 @@ export type LetterInput = {
 	serviceName: string;
 	date: string;
 	paid: string;
-	providerName: string;
 	answers: Record<string, boolean>;
 };
 
 export function letterParagraphs(l: LetterInput): string[] {
-	const what = `${l.serviceName.toLowerCase()}${l.providerName ? ` con ${l.providerName}` : ''}${l.date ? ` el ${l.date}` : ''}${l.paid ? `, por lo cual pagué $${l.paid}` : ''}`;
+	const what = `${l.serviceName.toLowerCase()}${l.date ? ` el ${l.date}` : ''}${l.paid ? `, por lo cual pagué $${l.paid}` : ''}`;
 	const closing =
 		'Adjunto el formulario de reembolso y el recibo original del proveedor con el diagnóstico (ICD-10), el código de cada servicio y su NPI.';
 

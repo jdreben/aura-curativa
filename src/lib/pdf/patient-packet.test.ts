@@ -13,7 +13,6 @@ const letterInput = (insurer: 'triple-s' | 'first-medical') => ({
 	serviceName: 'Acupuntura',
 	date: '10/09/2026',
 	paid: '90.00',
-	providerName: 'Dra. Rivera',
 	answers: { hra: true, preventiva: true, licencia: true, 'sin-red': true }
 });
 
@@ -21,12 +20,11 @@ const base = (insurer: 'triple-s' | 'first-medical'): PatientPacketInput => ({
 	insurer,
 	planName: insurer === 'triple-s' ? 'Triple-S Pocket Plata 2027' : 'First Medical Directo Silver 2027',
 	route: insurer === 'triple-s' ? 'contigo-fit' : 'routine',
+	serviceId: insurer === 'triple-s' ? 'acupuntura' : 'especialista',
 	serviceName: insurer === 'triple-s' ? 'Acupuntura, masaje terapéutico o reflexología' : 'Visita a especialista',
 	received: true,
 	date: '2026-10-09',
 	paid: '90.00',
-	providerName: 'Dra. Isabel Rivera Colón',
-	providerSpecialty: 'Acupuntura',
 	patient: demoPatients()[0].patient,
 	expected: '$20 al mes',
 	deadline: '10/09/2027',

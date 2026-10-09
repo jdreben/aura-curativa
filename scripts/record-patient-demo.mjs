@@ -62,8 +62,6 @@ const fill = async (name, value) => {
 };
 await caption(p, 'When, how much, and who.');
 await fill('Cuánto pagó ($)*', '90');
-await fill('Nombre del proveedor', 'Dra. Isabel Rivera');
-await fill('Especialidad del proveedor', 'Acupuntura');
 await press(p.getByRole('button', { name: 'Continuar' }));
 await caption(p, 'A few questions that justify the claim under the policy.');
 for (const btn of await p.getByRole('button', { name: 'Sí', exact: true }).all()) {
