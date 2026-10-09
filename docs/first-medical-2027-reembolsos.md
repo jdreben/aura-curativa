@@ -70,7 +70,9 @@ non-MD professionals other than audiologists, optometrists, podiatrists, psychol
   (p35, p52–53).
 - **Decision in 30 days;** 45 days to request reconsideration (p53).
 - **Where:** the policy only says "a las oficinas del Plan". No claims address or email is published.
-  General contacts: 787-474-3999, PO Box 191580, San Juan PR 00918-1580.
+  General contacts: 787-474-3999, PO Box 191580, San Juan PR 00918-1580. The app addresses claims to the
+  "Departamento de Reembolsos Médicos" at that box. The policy's own example sends claims to the
+  "Depto. de Reembolsos" (p35).
 - **Form:** one per patient, original receipt per provider, checkbox "Proveedor no acepta el plan". The
   website has a newer version than the team's copy:
   [FM-COM_CS_23.30_03 (approved 02/20/2023)](https://www.firstmedicalpr.com/wp-content/uploads/2024/09/FM-COM_CS_23.30_03_S_Solicitud-de-Reembolso_Spanish_Approved_02202023.pdf).

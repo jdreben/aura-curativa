@@ -112,7 +112,7 @@ export const CLAIM_RULES: Record<Insurer, ClaimRules> = {
 	'first-medical': {
 		deadlineDays: 90,
 		email: null,
-		address: ['First Medical Health Plan, Inc.', 'PO Box 191580', 'San Juan, PR 00918-1580'],
+		address: ['First Medical Health Plan, Inc.', 'Departamento de Reembolsos Médicos', 'PO Box 191580', 'San Juan, PR 00918-1580'],
 		note: 'La póliza no publica una dirección exclusiva para reclamaciones. Confírmela al 787-474-3999.',
 		form: 'https://www.firstmedicalpr.com/wp-content/uploads/2024/09/FM-COM_CS_23.30_03_S_Solicitud-de-Reembolso_Spanish_Approved_02202023.pdf'
 	}
