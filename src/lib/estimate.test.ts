@@ -26,6 +26,9 @@ describe('estimate', () => {
 	it('individual plans: adult glasses up to $75', () => {
 		expect(estimate('uno-plata', 'espejuelos', 50)?.back).toBe(50);
 		expect(estimate('uno-plata', 'espejuelos', 300)?.back).toBe(75);
+		expect(estimate('uno-plata', 'espejuelos', 0)?.benefit).toBe('Hasta $75 al año');
+		expect(estimate('directo-plata', 'especialista', 0)?.benefit).toBe('');
+		expect(estimate('fm-silver', 'laboratorio', 0)?.benefit).toContain('coaseguro (60%)');
 	});
 
 	it('emergencies are paid directly, not reimbursed', () => {

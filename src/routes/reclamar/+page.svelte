@@ -190,7 +190,7 @@
 				providerName,
 				providerSpecialty,
 				patient: $state.snapshot(patient),
-				expected: est?.headline ?? '',
+				expected: est?.benefit ?? '',
 				deadline,
 				steps,
 				letter: letterParagraphs({
@@ -253,7 +253,11 @@
 		</div>
 	{:else}
 		<h1 class="mt-4 text-2xl font-bold text-teal-900">Preparemos su reembolso</h1>
-		<p class="mt-1 text-sm text-slate-600">{planName} · {serviceName} · {est?.headline}</p>
+		<div class="mt-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm leading-relaxed text-teal-950">
+			<p class="font-semibold">{planName}</p>
+			<p>{serviceName}</p>
+			<p class="font-semibold text-teal-800">{est?.benefit}</p>
+		</div>
 
 		<ol class="mt-5 flex gap-1" aria-label="Progreso">
 			{#each flow as s, i (s)}

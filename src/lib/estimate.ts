@@ -122,6 +122,8 @@ export type Estimate = {
 	verdict: 'reimbursable' | 'not-reimbursable' | 'direct' | 'unknown';
 	insurer: Insurer;
 	headline: string;
+	// What is covered, without the yes/no framing; empty when nothing is.
+	benefit: string;
 	back: number | null;
 	owe: number | null;
 	explanation: string[];
@@ -146,6 +148,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 		return {
 			verdict: 'direct',
 			headline: 'Las emergencias se cubren aunque el hospital esté fuera de la red',
+			benefit: '',
 			back: null,
 			owe: null,
 			explanation: [
@@ -165,6 +168,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 			return {
 				verdict: 'reimbursable',
 				headline: 'Sí: hasta $75 al año',
+				benefit: 'Hasta $75 al año',
 				back,
 				owe: p - back,
 				explanation: ['Su póliza reembolsa espejuelos o lentes de contacto para adultos (21+) en ópticas no participantes, hasta $75 por año póliza.'],
@@ -179,6 +183,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 			return {
 				verdict: 'reimbursable',
 				headline: confirmed ? 'Sí, por Contigo Fit: $20 al mes' : 'Posiblemente, por Contigo Fit: $20 al mes',
+				benefit: `Contigo Fit: $20 al mes, hasta 12 meses${confirmed ? '' : ' (confirme con Triple-S)'}`,
 				back,
 				owe: p - back,
 				explanation: [
@@ -197,6 +202,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 		return {
 			verdict: 'not-reimbursable',
 			headline: 'No: su plan no reembolsa este servicio fuera de la red',
+			benefit: '',
 			back: 0,
 			owe: p,
 			explanation: [
@@ -218,6 +224,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 			return {
 				verdict: 'not-reimbursable',
 				headline: 'No: First Medical excluye la acupuntura',
+				benefit: '',
 				back: 0,
 				owe: paid,
 				explanation: ['La póliza 2027 excluye la acupuntura (exclusión 19) y la medicina natural (exclusión 20), dentro o fuera de la red.'],
@@ -230,6 +237,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 			return {
 				verdict: 'unknown',
 				headline: 'Verifique su beneficio de visión',
+				benefit: '',
 				back: null,
 				owe: null,
 				explanation: ['Aún no hemos verificado el beneficio de espejuelos de First Medical Directo 2027.'],
@@ -241,6 +249,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 		return {
 			verdict: 'reimbursable',
 			headline: 'Sí: First Medical reembolsa fuera de la red',
+			benefit: `Tarifa de la red para la misma especialidad, menos su ${cost ? `${cost.includes('%') ? 'coaseguro' : 'copago'} (${cost})` : 'copago o coaseguro'}`,
 			back: null,
 			owe: null,
 			explanation: [
@@ -259,6 +268,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 	return {
 		verdict: 'unknown',
 		headline: 'Aún no hemos verificado este plan',
+		benefit: '',
 		back: null,
 		owe: null,
 		explanation: ['Busque "reembolso" o "fuera de la red" en su póliza.'],

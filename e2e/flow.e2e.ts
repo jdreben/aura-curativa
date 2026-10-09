@@ -95,6 +95,9 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	await expect(page.getByText('Sí, por Contigo Fit: $20 al mes')).toBeVisible();
 	await page.getByRole('link', { name: '¡Empecemos!' }).click();
 	await expect(page).toHaveURL(/reclamar\?plan=pocket-plata&servicio=acupuntura/);
+	await expect(page.getByText('Triple-S Pocket Plata 2027', { exact: true })).toBeVisible();
+	await expect(page.getByText('Contigo Fit: $20 al mes, hasta 12 meses', { exact: true })).toBeVisible();
+	await expect(page.getByText(/^Sí, por Contigo Fit/)).toHaveCount(0);
 
 	await page.getByRole('button', { name: 'Sí', exact: true }).click();
 	await page.getByRole('button', { name: 'Continuar' }).click();
