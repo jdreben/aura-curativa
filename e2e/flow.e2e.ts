@@ -15,7 +15,9 @@ test('provider prepares, patient accepts, provider prints', async ({ page, conte
 	await page.getByRole('combobox', { name: 'Importar del expediente' }).selectOption('HA-0057');
 	await expect(page.getByLabel('Apellido paterno')).toHaveValue('Rivera');
 	await expect(page.getByRole('combobox', { name: 'Plan' })).toHaveValue('directo-plata');
-	await page.getByRole('button', { name: 'Datos de ejemplo' }).click();
+	await expect(page.getByRole('button', { name: 'Datos de ejemplo' })).toHaveCount(0);
+	await page.goto('/proveedor?demo');
+	await expect(page.getByLabel('Apellido paterno')).toHaveValue('Ortiz');
 
 	const reason = page.getByRole('combobox', { name: 'Razón de la solicitud' });
 	await reason.selectOption('routine');
@@ -180,9 +182,12 @@ test('patient before the service: preauthorization warning, form to bring', asyn
 	expect(pdf.getPageCount()).toBe(2);
 });
 
-test('demo data clicks straight through the wizard', async ({ page }) => {
-	await page.goto('/reclamar?plan=fm-silver&servicio=especialista');
-	await page.getByRole('button', { name: 'Datos de ejemplo' }).click();
+test('?demo fills the wizard so it clicks straight through', async ({ page }) => {
+	await page.goto('/?demo');
+	await page.getByRole('button', { name: 'Especialista · First Medical Silver' }).click();
+	await page.getByRole('link', { name: '¡Empecemos!' }).click();
+	await expect(page).toHaveURL(/demo=/);
+	await expect(page.getByRole('button', { name: 'Datos de ejemplo' })).toHaveCount(0);
 	await page.getByRole('button', { name: 'Sí', exact: true }).click();
 	for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuar' }).click();
 	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();

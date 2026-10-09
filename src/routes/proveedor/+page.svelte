@@ -2,6 +2,7 @@
 	import QRCode from 'qrcode';
 	import { onDestroy } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import Field from '#lib/components/Field.svelte';
 	import PatientFields from '#lib/components/PatientFields.svelte';
 	import CoverageCheck from '#lib/components/CoverageCheck.svelte';
@@ -73,6 +74,9 @@
 		reset();
 	}
 
+	// ?demo fills synthetic data so a live demo can skip typing; there is no visible button.
+	if (page.url.searchParams.has('demo')) loadDemo();
+
 	function reset() {
 		if (packet.status === 'ready') URL.revokeObjectURL(packet.url);
 		packet = { status: 'idle' };
@@ -123,13 +127,6 @@
 			Prepare la reclamación completa. El paciente solo la revisa y la acepta desde su teléfono.
 		</p>
 	</div>
-	<button
-		type="button"
-		onclick={loadDemo}
-		class="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-	>
-		Datos de ejemplo
-	</button>
 </div>
 
 <form

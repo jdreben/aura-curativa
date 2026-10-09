@@ -48,6 +48,11 @@ Providers can also prepare the whole claim for the patient at [`/proveedor`](htt
 import the patient, run the same coverage check, and hand over a QR code. The patient reviews and
 accepts on their phone, and the provider prints the packet once the patient's code matches.
 
+## Demo shortcut
+
+Add `?demo` to the URL (e.g. `/?demo`, then an example and *¡Empecemos!*, or `/proveedor?demo`) to fill
+every form with synthetic data. There is no visible button for it.
+
 ## Privacy model
 
 There is no backend and no database.

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import Linked from '#lib/components/Linked.svelte';
 	import { INSURERS, SERVICES, claimable, estimate } from '#lib/estimate.ts';
 	import type { Insurer, PatientPlanId, ServiceId } from '#lib/estimate.ts';
@@ -119,7 +120,7 @@
 				Le llenamos el formulario de {est.insurer === 'triple-s' ? 'Triple-S' : 'First Medical'} y se lo preparamos para su proveedor.
 			</p>
 			<a
-				href={`${resolve('/reclamar')}?${new URLSearchParams({ plan, servicio: service })}`}
+				href={`${resolve('/reclamar')}?${new URLSearchParams({ plan, servicio: service, ...(page.url.searchParams.has('demo') ? { demo: '' } : {}) })}`}
 				class="mt-4 inline-block rounded-xl bg-teal-700 px-8 py-3 font-semibold text-white shadow hover:bg-teal-800"
 			>
 				¡Empecemos!

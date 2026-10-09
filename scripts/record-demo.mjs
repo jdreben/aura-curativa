@@ -66,7 +66,7 @@ const desk = await browser.newContext({
 });
 const p1 = await desk.newPage();
 const t0 = Date.now();
-await p1.goto(`${BASE}/proveedor`);
+await p1.goto(`${BASE}/proveedor?demo`);
 await caption(p1, 'For providers: prepare the whole claim for the patient from data the office already has.');
 await sleep(3000);
 await caption(p1, 'Patient and plan come straight from the practice’s intake records (simulated here).');
@@ -81,7 +81,6 @@ await picker.selectOption('HA-0042');
 await picker.evaluate((el) => (el.style.outline = ''));
 await sleep(1800);
 await caption(p1, 'Add the visit: ICD-10 diagnosis, CPT services, amount paid.');
-await press(p1.getByRole('button', { name: 'Datos de ejemplo' }));
 await glide(p1, 1500, 1800);
 const reason = p1.getByRole('combobox', { name: 'Razón de la solicitud' });
 await reason.scrollIntoViewIfNeeded();
