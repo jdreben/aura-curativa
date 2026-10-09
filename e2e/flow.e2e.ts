@@ -246,6 +246,8 @@ test('plan comparison: picks the same tier at the other insurer, with premiums b
 	await expect(page.getByRole('columnheader', { name: /Directo Gold Plus/ })).toBeVisible();
 	await expect(page.getByRole('columnheader', { name: /Directo Silver/ })).toHaveCount(0);
 	await expect(page.getByText('$208.95')).toBeVisible();
+	await expect(page.getByText('Plan seleccionado')).toBeVisible();
+	await expect(page.getByText('Este plan no reembolsa este servicio fuera de la red').first()).toBeVisible();
 	await expect(page.getByText('Aún no publicada para 2027')).toBeVisible();
 	await page.getByLabel('Edad').fill('64');
 	await expect(page.getByText('$490.50')).toBeVisible();

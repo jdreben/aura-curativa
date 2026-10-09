@@ -32,7 +32,8 @@
 	function detail(e: Estimate): string {
 		if (e.benefit) return e.benefit;
 		if (e.verdict === 'direct') return 'El plan le paga al proveedor; usted paga su copago.';
-		const t = e.headline.replace(/^No: /, '');
+		// The estimator speaks to a member ("su plan"); here the plan may not be theirs.
+		const t = e.headline.replace(/^No: /, '').replace(/^su plan/i, 'este plan');
 		return t.charAt(0).toUpperCase() + t.slice(1);
 	}
 
@@ -52,7 +53,7 @@
 <section class="text-center">
 	<h1 class="text-3xl font-bold tracking-tight text-teal-900 sm:text-4xl">Compare planes {PLAN_YEAR}</h1>
 	<p class="mx-auto mt-3 max-w-2xl text-slate-600">
-		Escoja su plan y vea, al lado de los planes del mismo nivel en otras aseguradoras, cuánto cuesta y qué le
+		Escoja un plan y vea, al lado de los planes del mismo nivel en otras aseguradoras, cuánto cuesta y qué le
 		reembolsan fuera de la red.
 	</p>
 </section>
@@ -109,7 +110,7 @@
 						<th class="p-3 text-left align-bottom {i === 0 ? 'bg-teal-50' : ''}">
 							<span class="block text-xs font-medium text-slate-500">{insurerName(p.insurer)} · {METAL_NAMES[p.metal]}</span>
 							<span class="block font-semibold text-slate-900">{p.name.replace(/^(Triple-S|First Medical) /, '')}</span>
-							{#if i === 0}<span class="mt-1 inline-block rounded-full bg-teal-700 px-2 py-0.5 text-xs font-medium text-white">Su plan</span>{/if}
+							{#if i === 0}<span class="mt-1 inline-block rounded-full bg-teal-700 px-2 py-0.5 text-xs font-medium text-white">Plan seleccionado</span>{/if}
 						</th>
 					{/each}
 				</tr>
