@@ -169,6 +169,18 @@ test('patient before the service: preauthorization warning, form to bring', asyn
 	expect(pdf.getPageCount()).toBe(2);
 });
 
+test('demo data clicks straight through the wizard', async ({ page }) => {
+	await page.goto('/reclamar?plan=fm-silver&servicio=especialista');
+	await page.getByRole('button', { name: 'Datos de ejemplo' }).click();
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuar' }).click();
+	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
+	await expect(page.getByText('Revise su formulario')).toBeVisible();
+	await expect(page.getByText('FM0012345678')).toBeVisible();
+	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
+	await expect(page.getByRole('textbox', { name: 'Email del proveedor' })).toHaveValue('proveedor@example.com');
+});
+
 test('claim page without a valid plan says so', async ({ page }) => {
 	await page.goto('/reclamar?plan=nope&servicio=especialista');
 	await expect(page.getByText('No encontramos un reembolso que preparar.')).toBeVisible();

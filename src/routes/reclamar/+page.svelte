@@ -6,6 +6,7 @@
 	import PatientFields from '#lib/components/PatientFields.svelte';
 	import Problems from '#lib/components/Problems.svelte';
 	import { emptyPatient, patientFullName } from '#lib/claim.ts';
+	import { demoPatients } from '#lib/demo.ts';
 	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
 	import { letterParagraphs, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
@@ -126,6 +127,19 @@
 		if (stepIndex > 0) step = flow[stepIndex - 1];
 	}
 
+	// Synthetic data so a demo can click straight through every step.
+	function fillDemo() {
+		const demo = demoPatients()[insurer === 'triple-s' ? 0 : 1].patient;
+		paid = route === 'vision' ? '180' : '90';
+		providerName = 'Dra. Isabel Rivera Colón';
+		providerSpecialty = serviceName.split(',')[0];
+		answers = Object.fromEntries(questions.map((q) => [q.id, true]));
+		patient = { ...demo, contractNumber: insurer === 'triple-s' ? demo.contractNumber : 'FM0012345678' };
+		myEmail = 'paciente@example.com';
+		providerEmail = 'proveedor@example.com';
+		attempted = false;
+	}
+
 	function choose(r: boolean) {
 		received = r;
 		step = r ? 'details' : 'questions';
@@ -236,7 +250,18 @@
 			<p class="mt-1">Escoja su plan y servicio en la página principal.</p>
 		</div>
 	{:else}
-		<h1 class="mt-4 text-2xl font-bold text-teal-900">Preparemos su reembolso</h1>
+		<div class="mt-4 flex items-start justify-between gap-3">
+			<h1 class="text-2xl font-bold text-teal-900">Preparemos su reembolso</h1>
+			{#if step !== 'review'}
+				<button
+					type="button"
+					onclick={fillDemo}
+					class="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+				>
+					Datos de ejemplo
+				</button>
+			{/if}
+		</div>
 		<p class="mt-1 text-sm text-slate-600">{planName} · {serviceName} · {est?.headline}</p>
 
 		<ol class="mt-5 flex gap-1" aria-label="Progreso">
