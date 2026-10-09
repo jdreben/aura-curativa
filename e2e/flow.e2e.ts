@@ -87,9 +87,8 @@ test('patient learns what comes back, then prepares the form', async ({ page }) 
 	await expect(page.getByRole('link', { name: 'Solicitud de Reembolso de First Medical' })).toBeVisible();
 	await shot(page, 'p2b-first-medical');
 
-	await page.getByRole('combobox', { name: 'Aseguradora' }).selectOption('triple-s');
-	await page.getByRole('combobox', { name: 'Su plan' }).selectOption('pocket-plata');
-	await page.getByRole('combobox', { name: 'Servicio' }).selectOption('acupuntura');
+	await page.getByRole('button', { name: 'Acupuntura · Triple-S Pocket Plata' }).click();
+	await expect(page.getByRole('combobox', { name: 'Su plan' })).toHaveValue('pocket-plata');
 	await expect(page.getByText('Sí, por Contigo Fit: $20 al mes')).toBeVisible();
 	await expect(page.getByText('4 · Cómo reclamarlo')).toBeVisible();
 

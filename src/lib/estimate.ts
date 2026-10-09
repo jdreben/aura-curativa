@@ -70,11 +70,11 @@ type IndividualPlan = 'directo-bronce' | 'directo-plata' | 'pocket-plata' | 'poc
 
 // In-network cost-sharing from each 2027 póliza; Pocket and Uno show "preferred network / Blue Select".
 const IN_NETWORK: Record<IndividualPlan, Partial<Record<ServiceId, string>>> = {
-	'directo-bronce': { pcp: '$10', especialista: '$25', subespecialista: '$30', 'salud-mental': '$25', laboratorio: '60% coaseguro', radiologia: '60% coaseguro', quiropractico: '$15 la visita', acupuntura: '$15 (Triple-S Natural)' },
-	'directo-plata': { pcp: '$0', especialista: '$15', subespecialista: '$25', 'salud-mental': '$15', laboratorio: '35% coaseguro', radiologia: '40% coaseguro', quiropractico: '$15', acupuntura: '$15 (Triple-S Natural)' },
-	'pocket-plata': { pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro', radiologia: '40% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15 (Triple-S Natural)' },
-	'pocket-oro': { pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro ($0 en SALUS)', radiologia: '30% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15 (Triple-S Natural)' },
-	'uno-plata': { pcp: '$0 en Blue One / $15', especialista: '$0 en Blue One / $25', subespecialista: '$10 en Blue One / $30', 'salud-mental': '$0 en Blue One / $25', laboratorio: '$0 en Blue One / 40%', radiologia: '$0 en Blue One / 40%', quiropractico: '$0 en Blue One / $25', acupuntura: '$15 (Triple-S Natural)' }
+	'directo-bronce': { pcp: '$10', especialista: '$25', subespecialista: '$30', 'salud-mental': '$25', laboratorio: '60% coaseguro', radiologia: '60% coaseguro', quiropractico: '$15 la visita', acupuntura: '$15' },
+	'directo-plata': { pcp: '$0', especialista: '$15', subespecialista: '$25', 'salud-mental': '$15', laboratorio: '35% coaseguro', radiologia: '40% coaseguro', quiropractico: '$15', acupuntura: '$15' },
+	'pocket-plata': { pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro', radiologia: '40% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15' },
+	'pocket-oro': { pcp: '$0', especialista: '$0 en Red Pocket / $10', subespecialista: '$0 en Red Pocket / $25', 'salud-mental': '$0 en Red Pocket / $10', laboratorio: '30% coaseguro ($0 en SALUS)', radiologia: '30% coaseguro', quiropractico: '$10 en Red Pocket', acupuntura: '$15' },
+	'uno-plata': { pcp: '$0 en Blue One / $15', especialista: '$0 en Blue One / $25', subespecialista: '$10 en Blue One / $30', 'salud-mental': '$0 en Blue One / $25', laboratorio: '$0 en Blue One / 40%', radiologia: '$0 en Blue One / 40%', quiropractico: '$0 en Blue One / $25', acupuntura: '$15' }
 };
 
 const INDIVIDUAL: PatientPlanId[] = ['directo-bronce', 'directo-plata', 'pocket-plata', 'pocket-oro', 'uno-plata'];

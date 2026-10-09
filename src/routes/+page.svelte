@@ -41,6 +41,19 @@
 		...(Number.parseFloat(paid) > 0 ? [] : ['Indique cuánto pagó.']),
 		...(date ? [] : ['Indique la fecha del servicio.'])
 	]);
+	const EXAMPLES: { label: string; insurer: Insurer; plan: PatientPlanId; service: ServiceId }[] = [
+		{ label: 'Acupuntura · Triple-S Pocket Plata', insurer: 'triple-s', plan: 'pocket-plata', service: 'acupuntura' },
+		{ label: 'Especialista · First Medical Silver', insurer: 'first-medical', plan: 'fm-silver', service: 'especialista' },
+		{ label: 'Especialista · Triple-S Directo Plata', insurer: 'triple-s', plan: 'directo-plata', service: 'especialista' }
+	];
+
+	function useExample(ex: (typeof EXAMPLES)[number]) {
+		insurer = ex.insurer;
+		plan = ex.plan;
+		service = ex.service;
+		resetPacket();
+	}
+
 	const serviceName = $derived(SERVICES.find((s) => s.id === service)?.name ?? '');
 
 	function resetPacket() {
@@ -90,7 +103,20 @@
 	</p>
 </section>
 
-<div class="mx-auto mt-8 max-w-2xl space-y-6">
+<div class="mx-auto mt-6 flex max-w-2xl flex-wrap justify-center gap-2">
+	<span class="self-center text-xs text-slate-500">Ejemplos:</span>
+	{#each EXAMPLES as ex (ex.label)}
+		<button
+			type="button"
+			onclick={() => useExample(ex)}
+			class="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-medium text-teal-800 hover:bg-teal-50"
+		>
+			{ex.label}
+		</button>
+	{/each}
+</div>
+
+<div class="mx-auto mt-6 max-w-2xl space-y-6">
 	<section class="rounded-xl border border-slate-200 bg-white p-5">
 		<h2 class="text-sm font-semibold text-slate-800">1 · Su plan</h2>
 		<div class="mt-3 grid gap-4 sm:grid-cols-2">
