@@ -11,6 +11,7 @@ export const FIRST_MEDICAL = {
 export type FirstMedicalForm = {
 	patient: Patient & { dob: string };
 	vision: boolean;
+	cannabis: boolean;
 	accident: Accident | null;
 	lines: { date: string; description: string; paid: string }[];
 };
@@ -27,7 +28,7 @@ export async function fillFirstMedical(template: Uint8Array, f: FirstMedicalForm
 	const first = [p.firstName, p.middleInitial].filter(Boolean).join(' ');
 	const last = [p.lastNamePaternal, p.lastNameMaternal].filter(Boolean).join(' ');
 
-	w('X', f.vision ? 235 : 40, 717, 10);
+	w('X', f.cannabis ? 456 : f.vision ? 235 : 40, 717, 10);
 	for (const [y, size] of [
 		[617, 10],
 		[591, 8.5]
@@ -50,7 +51,8 @@ export async function fillFirstMedical(template: Uint8Array, f: FirstMedicalForm
 	}
 	if (f.accident?.kind) w('X', { auto: 212, trabajo: 342, otro: 454 }[f.accident.kind], 426, 9);
 	// "Proveedor no acepta el plan" is the claim reason; the provider's own fields stay blank for them to fill.
-	w('X', 212, 415, 9);
+	// Cannabis is bought inside the FM Cannabis network, so it takes that box instead.
+	w('X', f.cannabis ? 342 : 212, 415, 9);
 
 	const rows = [338, 316, 294, 272];
 	f.lines.slice(0, rows.length).forEach((l, i) => {

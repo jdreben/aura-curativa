@@ -67,6 +67,47 @@ describe('estimate', () => {
 		expect(estimate('fm-gold', 'acupuntura', 90)?.verdict).toBe('not-reimbursable');
 	});
 
+	it('non-emergency ground ambulance: $80 per case (Triple-S) or per trip (First Medical)', () => {
+		const ts = estimate('directo-bronce', 'ambulancia', 150);
+		expect(ts?.route).toBe('ambulance');
+		expect(ts?.back).toBe(80);
+		expect(claimable(ts)).toBe(true);
+		const fm = estimate('fm-gold', 'ambulancia', 60);
+		expect(fm?.back).toBe(60);
+		expect(fm?.alternatives[0]).toContain('9-1-1');
+	});
+
+	it('Contigo Fit covers gym, trainer and yoga on Triple-S; First Medical does not', () => {
+		const ts = estimate('pocket-oro', 'gimnasio', 45);
+		expect(ts?.route).toBe('contigo-fit');
+		expect(ts?.back).toBe(20);
+		expect(ts?.alternatives).toEqual([]);
+		expect(estimate('fm-silver', 'gimnasio', 45)?.verdict).toBe('not-reimbursable');
+	});
+
+	it('Mi Momento pays $200 once; Directo Plata is unconfirmed', () => {
+		expect(estimate('uno-plata', 'fertilidad', 250)?.back).toBe(200);
+		expect(estimate('directo-plata', 'fertilidad', 250)?.headline).toContain('Posiblemente');
+		const fm = estimate('fm-gold-plus', 'fertilidad', 120);
+		expect(fm?.benefit).toContain('$15');
+		expect(fm?.conditions.join(' ')).toContain('exclusiones 16 y 40');
+	});
+
+	it('medical cannabis: First Medical up to $350 a year in its dispensaries; Triple-S excludes it', () => {
+		const fm = estimate('fm-silver', 'cannabis', 500);
+		expect(fm?.back).toBe(350);
+		expect(fm?.route).toBe('cannabis');
+		expect(claimable(fm)).toBe(true);
+		expect(estimate('pocket-plata', 'cannabis', 100)?.verdict).toBe('not-reimbursable');
+	});
+
+	it('First Medical nutritionist uses its own copay and visit limit', () => {
+		const e = estimate('fm-gold', 'nutricionista', 80);
+		expect(e?.benefit).toContain('$18');
+		expect(e?.conditions.join(' ')).toContain('4 visitas');
+		expect(estimate('pocket-plata', 'nutricionista', 80)?.verdict).toBe('not-reimbursable');
+	});
+
 	it('deadlines count from the service date', () => {
 		expect(deadlineFrom('2026-10-09', 90)).toBe('01/07/2027');
 		expect(deadlineFrom('', 90)).toBe('');

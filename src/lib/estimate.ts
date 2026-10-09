@@ -24,6 +24,11 @@ export type ServiceId =
 	| 'acupuntura'
 	| 'cirugia'
 	| 'espejuelos'
+	| 'gimnasio'
+	| 'nutricionista'
+	| 'fertilidad'
+	| 'ambulancia'
+	| 'cannabis'
 	| 'emergencia';
 
 // Order is the order shown to patients; more insurers (MCS, Menonita…) get added here.
@@ -56,13 +61,18 @@ export const SERVICES: { id: ServiceId; name: string }[] = [
 	{ id: 'subespecialista', name: 'Visita a subespecialista' },
 	{ id: 'pcp', name: 'Visita a médico primario' },
 	{ id: 'salud-mental', name: 'Psicólogo o psiquiatra' },
+	{ id: 'nutricionista', name: 'Nutricionista' },
+	{ id: 'fertilidad', name: 'Consulta de planificación de fertilidad' },
 	{ id: 'acupuntura', name: 'Acupuntura, masaje terapéutico o reflexología' },
+	{ id: 'gimnasio', name: 'Gimnasio, entrenador o yoga' },
 	{ id: 'laboratorio', name: 'Laboratorio' },
 	{ id: 'radiologia', name: 'Rayos X o radiología' },
 	{ id: 'terapia-fisica', name: 'Terapia física' },
 	{ id: 'quiropractico', name: 'Quiropráctico' },
 	{ id: 'cirugia', name: 'Cirugía ambulatoria' },
 	{ id: 'espejuelos', name: 'Espejuelos o lentes de contacto (adulto)' },
+	{ id: 'cannabis', name: 'Cannabis medicinal' },
+	{ id: 'ambulancia', name: 'Ambulancia terrestre (no de emergencia)' },
 	{ id: 'emergencia', name: 'Sala de emergencia' }
 ];
 
@@ -83,10 +93,10 @@ type FirstMedicalPlan = 'fm-gold-plus' | 'fm-gold' | 'fm-silver-plus' | 'fm-silv
 
 // First Medical Directo 2027 cubierta de beneficios (FMHP-PD-2027), cost-sharing tables; [Metro Pavía] in brackets.
 const FM_COST: Record<FirstMedicalPlan, Partial<Record<ServiceId, string>>> = {
-	'fm-gold-plus': { pcp: '$5', especialista: '$15', subespecialista: '$20', 'salud-mental': '$15', laboratorio: '35%', radiologia: '35%', 'terapia-fisica': '$10', quiropractico: '$15', cirugia: '35%' },
-	'fm-gold': { pcp: '$8', especialista: '$18', subespecialista: '$20', 'salud-mental': '$18', laboratorio: '45%', radiologia: '45%', 'terapia-fisica': '$12', quiropractico: '$18', cirugia: '45%' },
-	'fm-silver-plus': { pcp: '$10', especialista: '$18', subespecialista: '$18', 'salud-mental': '$18', laboratorio: '55%', radiologia: '55%', 'terapia-fisica': '$15', quiropractico: '$18', cirugia: '65%' },
-	'fm-silver': { pcp: '$10', especialista: '$20', subespecialista: '$30', 'salud-mental': '$20', laboratorio: '60%', radiologia: '60%', 'terapia-fisica': '$18', quiropractico: '$20', cirugia: '75%' }
+	'fm-gold-plus': { nutricionista: '$15', pcp: '$5', especialista: '$15', subespecialista: '$20', 'salud-mental': '$15', laboratorio: '35%', radiologia: '35%', 'terapia-fisica': '$10', quiropractico: '$15', cirugia: '35%' },
+	'fm-gold': { nutricionista: '$18', pcp: '$8', especialista: '$18', subespecialista: '$20', 'salud-mental': '$18', laboratorio: '45%', radiologia: '45%', 'terapia-fisica': '$12', quiropractico: '$18', cirugia: '45%' },
+	'fm-silver-plus': { nutricionista: '$20', pcp: '$10', especialista: '$18', subespecialista: '$18', 'salud-mental': '$18', laboratorio: '55%', radiologia: '55%', 'terapia-fisica': '$15', quiropractico: '$18', cirugia: '65%' },
+	'fm-silver': { nutricionista: '$20', pcp: '$10', especialista: '$20', subespecialista: '$30', 'salud-mental': '$20', laboratorio: '60%', radiologia: '60%', 'terapia-fisica': '$18', quiropractico: '$20', cirugia: '75%' }
 };
 const FM_PAVIA_FREE: ServiceId[] = ['pcp', 'especialista', 'laboratorio', 'radiologia'];
 // MRI, CT, sonograms and other "pruebas especializadas" (line K): 20% at Metro Pavía.
@@ -179,7 +189,52 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 				conditions: []
 			};
 		}
-		if (service === 'acupuntura') {
+		if (service === 'ambulancia') {
+			const back = Math.min(80, p);
+			return {
+				verdict: 'reimbursable',
+				headline: 'Sí: hasta $80 por caso',
+				benefit: 'Hasta $80 por caso',
+				back,
+				owe: p - back,
+				explanation: ['Su póliza reembolsa la ambulancia terrestre que no es de emergencia, hasta $80 por caso.'],
+				alternatives: ['Si fue una emergencia, Triple-S le paga a la ambulancia directamente: no necesita reembolso.'],
+				route: 'ambulance',
+				conditions: ['Incluya el informe médico con el diagnóstico, por qué necesitaba la ambulancia y la distancia recorrida.']
+			};
+		}
+		if (service === 'fertilidad') {
+			const confirmed = plan !== 'directo-plata';
+			const back = Math.min(200, p);
+			return {
+				verdict: 'reimbursable',
+				headline: confirmed ? 'Sí, por Mi Momento: $200 una vez' : 'Posiblemente, por Mi Momento: $200 una vez',
+				benefit: `Mi Momento: $200, una sola vez${confirmed ? '' : ' (confirme con Triple-S)'}`,
+				back,
+				owe: p - back,
+				explanation: [
+					'El beneficio Mi Momento reembolsa $200, una sola vez, por una consulta de planificación de fertilidad.',
+					...(confirmed ? [] : ['La póliza 2027 de Directo Plata no menciona Mi Momento. Confírmelo con Triple-S.'])
+				],
+				alternatives: [],
+				route: 'mi-momento',
+				conditions: []
+			};
+		}
+		if (service === 'cannabis') {
+			return {
+				verdict: 'not-reimbursable',
+				headline: 'No: Triple-S excluye el cannabis medicinal',
+				benefit: '',
+				back: 0,
+				owe: p,
+				explanation: ['La póliza 2027 excluye el cannabis medicinal, dentro o fuera de la red.'],
+				alternatives: [],
+				route: null,
+				conditions: []
+			};
+		}
+		if (service === 'acupuntura' || service === 'gimnasio') {
 			const confirmed = plan !== 'directo-plata';
 			const back = Math.min(20, p);
 			return {
@@ -189,10 +244,13 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 				back,
 				owe: p - back,
 				explanation: [
-					'Una visita regular fuera de la red no se reembolsa, pero el programa Contigo Fit reembolsa $20 al mes (hasta 12 meses) por acupuntura, masaje terapéutico o reflexología.',
+					'Una visita regular fuera de la red no se reembolsa, pero el programa Contigo Fit reembolsa $20 al mes (hasta 12 meses) por gimnasio, entrenador, yoga, acupuntura, masaje terapéutico o reflexología.',
 					...(confirmed ? [] : ['La póliza 2027 de Directo Plata no menciona Contigo Fit. Confírmelo con Triple-S.'])
 				],
-				alternatives: [`Dentro de la red, Triple-S Natural cubre acupuntura, masaje terapéutico y naturopatía: ${inNet ?? '$15'} por visita, hasta 6 al año.`],
+				alternatives:
+					service === 'acupuntura'
+						? [`Dentro de la red, Triple-S Natural cubre acupuntura, masaje terapéutico y naturopatía: ${inNet ?? '$15'} por visita, hasta 6 al año.`]
+						: [],
 				route: 'contigo-fit',
 				conditions: [
 					'Complete la evaluación de salud (HRA) en la app Mi Triple-S.',
@@ -221,7 +279,57 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 	}
 
 	if (plan.startsWith('fm-')) {
-		const cost = FM_COST[plan as FirstMedicalPlan][service];
+		// A fertility-planning consult is a gynecologist visit, billed at the specialist copay.
+		const cost = FM_COST[plan as FirstMedicalPlan][service === 'fertilidad' ? 'especialista' : service];
+		if (service === 'ambulancia') {
+			const back = Math.min(80, p);
+			return {
+				verdict: 'reimbursable',
+				headline: 'Sí: hasta $80 por viaje',
+				benefit: 'Hasta $80 por viaje',
+				back,
+				owe: p - back,
+				explanation: [
+					'Su póliza cubre por reembolso, hasta $80 por viaje, la ambulancia terrestre hacia o desde un hospital local, una facilidad alterna o entre hospitales.'
+				],
+				alternatives: ['Si llamó al 9-1-1, First Medical le paga el 100% a la ambulancia directamente (Ley 129-2019): no necesita reembolso.'],
+				route: 'ambulance',
+				conditions: ['La ambulancia debe estar autorizada por la Comisión de Servicio Público.']
+			};
+		}
+		if (service === 'cannabis') {
+			const back = Math.min(350, p);
+			return {
+				verdict: 'reimbursable',
+				headline: 'Sí: hasta $350 al año',
+				benefit: 'Hasta $350 por año contrato',
+				back,
+				owe: p - back,
+				explanation: [
+					'Su póliza reembolsa el cannabis medicinal comprado en la red de dispensarios de First Medical Cannabis, hasta $350 por año contrato.'
+				],
+				alternatives: [],
+				route: 'cannabis',
+				conditions: [
+					'Compre en un dispensario de First Medical Cannabis. Las compras en otros dispensarios no se reembolsan.',
+					'Debe tener 21 años o más y licencia vigente de paciente de cannabis medicinal. Anexe copia de la licencia.',
+					'La recomendación debe ser de un médico registrado para cannabis medicinal.'
+				]
+			};
+		}
+		if (service === 'gimnasio') {
+			return {
+				verdict: 'not-reimbursable',
+				headline: 'No: First Medical no cubre gimnasio ni entrenador',
+				benefit: '',
+				back: 0,
+				owe: p,
+				explanation: ['La póliza 2027 no incluye gimnasio, entrenador ni yoga, y excluye lo que no está expresamente cubierto (exclusión 56).'],
+				alternatives: ['El Programa de Bienestar FM da recompensas de hasta $200 al año para artículos en farmacias, no reembolsos en efectivo.'],
+				route: null,
+				conditions: []
+			};
+		}
 		if (service === 'acupuntura') {
 			return {
 				verdict: 'not-reimbursable',
@@ -277,6 +385,10 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 				'Debe ser un servicio cubierto y médicamente necesario.',
 				...(service === 'terapia-fisica' || service === 'quiropractico'
 					? ['Hasta 20 terapias y manipulaciones quiroprácticas combinadas por año contrato.']
+					: []),
+				...(service === 'nutricionista' ? ['Hasta 4 visitas por año contrato.'] : []),
+				...(service === 'fertilidad'
+					? ['Solo la consulta. La póliza excluye los tratamientos de infertilidad y la inseminación (exclusiones 16 y 40).']
 					: [])
 			]
 		};

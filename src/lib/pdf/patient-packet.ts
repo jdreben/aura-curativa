@@ -222,6 +222,7 @@ export async function buildPatientPacket(template: Uint8Array, i: PatientPacketI
 			: await fillFirstMedical(template, {
 					patient: i.patient,
 					vision: i.route === 'vision' || i.serviceId === 'espejuelos',
+					cannabis: i.route === 'cannabis',
 					accident: i.accident,
 					lines
 				});

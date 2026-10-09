@@ -57,6 +57,18 @@ Medical Card, "ambiente de LIBRE SELECCIÓN". Metro Pavía facilities are a chea
 Physical therapy, rehabilitation and chiropractic manipulations: 20 per year, combined. Manipulations,
 rehabilitation, habilitation and adult glasses require pre-authorization (p99–100, p127).
 
+## Fixed-amount reimbursements
+
+- **Ground ambulance:** up to $80 per trip, by reimbursement, to or from a local hospital, an alternate
+  facility, or between hospitals. Ambulances sent through 9-1-1 are paid 100% directly to the provider
+  (Ley 129-2019) (p101).
+- **Medical cannabis:** up to $350 per contract year, by reimbursement. Purchases must be at First Medical
+  Cannabis dispensaries, the member must be 21 or older with a current patient license, and the
+  recommending doctor must be registered. Claims need a copy of the license (p106, p52).
+- **Nutritionist:** covered under the general out-of-network rule, up to 4 visits per contract year (p102).
+- Gym, trainer and yoga are not covered (exclusion 56, p136). Infertility treatment is excluded (#16, #40,
+  p134). A fertility-planning consult is billed as a gynecologist (specialist) visit.
+
 ## Exclusions that matter for cash-pay providers
 
 Acupuncture (#19); sports medicine, natural medicine, music therapy, psychoanalysis, cardiac rehab (#20);

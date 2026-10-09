@@ -17,7 +17,7 @@ export function questionsFor(insurer: Insurer, route: RouteId): Question[] {
 	if (insurer === 'triple-s' && route === 'vision') {
 		return [{ id: 'adulto', text: '¿La persona que recibió el servicio tiene 21 años o más?', warnIfNo: 'Este beneficio es solo para adultos de 21 años o más.' }];
 	}
-	if (insurer === 'first-medical') {
+	if (insurer === 'first-medical' && route === 'routine') {
 		return [{ id: 'sin-red', text: '¿Buscó un proveedor de esta especialidad en la red de First Medical y no había?' }];
 	}
 	return [];
@@ -52,6 +52,21 @@ export function letterParagraphs(l: LetterInput): string[] {
 	const closing =
 		'Adjunto el formulario de reembolso y el recibo original del proveedor con el diagnóstico (ICD-10), el código de cada servicio y su NPI.';
 
+	if (l.route === 'ambulance') {
+		return [
+			`Solicito el reembolso del beneficio de ambulancia terrestre de mi póliza ${l.planName} (hasta $80 por ${l.insurer === 'triple-s' ? 'caso' : 'viaje'}) por ${what}.`,
+			'Adjunto el formulario de reembolso, el recibo original de la compañía de ambulancias y el informe médico con el diagnóstico, la razón del traslado y la distancia recorrida.'
+		];
+	}
+	if (l.route === 'cannabis') {
+		return [
+			`Solicito el reembolso del beneficio de cannabis medicinal de mi póliza ${l.planName} (hasta $350 por año contrato) por ${what}, comprado en un dispensario de First Medical Cannabis.`,
+			'Adjunto el formulario de reembolso, el recibo original del dispensario y copia de mi licencia vigente de paciente de cannabis medicinal.'
+		];
+	}
+	if (l.route === 'mi-momento') {
+		return [`Solicito el reembolso del beneficio Mi Momento de mi póliza ${l.planName} ($200, una sola vez) por ${what}.`, closing];
+	}
 	if (l.insurer === 'first-medical') {
 		return [
 			`Solicito el reembolso de gastos cubiertos por servicios obtenidos fuera de la red, conforme a la sección "Reembolso de gastos cubiertos por servicios obtenidos fuera de la red" de mi póliza ${l.planName}, por ${what}. El proveedor no acepta el plan.`,
@@ -87,6 +102,47 @@ export type BenefitExplanation = { basis: string; paragraphs: string[] };
 // The "why you are entitled" page that goes with every claim; written for the insurer's reviewer.
 export function benefitExplanation(l: LetterInput & { benefit: string }): BenefitExplanation {
 	const service = l.serviceName.toLowerCase();
+	if (l.route === 'ambulance' && l.insurer === 'first-medical') {
+		return {
+			basis: 'Póliza First Medical Directo 2027 (FMHP-PD-2027): Servicios Médicos Ambulatorios, "Ambulancia Terrestre".',
+			paragraphs: [
+				'La póliza cubre, a través de reembolso y hasta $80 por viaje, la ambulancia terrestre hacia o desde un hospital local, una facilidad alterna o un traslado entre instituciones hospitalarias.',
+				`El servicio reclamado, ${service}, está dentro de este beneficio. Beneficio aplicable: ${l.benefit}.`,
+				'La póliza requiere someter la solicitud dentro de 90 días desde la fecha del servicio, con el recibo original.'
+			]
+		};
+	}
+	if (l.route === 'cannabis') {
+		return {
+			basis:
+				'Póliza First Medical Directo 2027 (FMHP-PD-2027): beneficio "Cannabis Medicinal" y sección "Reembolso de gastos cubiertos por cannabis medicinal".',
+			paragraphs: [
+				'La póliza reembolsa al suscriptor de 21 años o más el gasto en cannabis medicinal comprado en la red de dispensarios de First Medical Cannabis, hasta $350 por año contrato.',
+				`El producto reclamado se compró en esa red con la recomendación de un médico registrado. Beneficio aplicable: ${l.benefit}.`,
+				'Se anexa copia de la licencia vigente de paciente autorizado emitida por el Departamento de Salud. La solicitud se somete dentro de 90 días desde la compra.'
+			]
+		};
+	}
+	if (l.route === 'ambulance') {
+		return {
+			basis: `Póliza ${l.planName}: beneficio de ambulancia terrestre que no es de emergencia.`,
+			paragraphs: [
+				'La póliza reembolsa la ambulancia terrestre que no es de emergencia, hasta $80 por caso.',
+				`El servicio reclamado, ${service}, está dentro de este beneficio. Beneficio aplicable: ${l.benefit}.`,
+				'Se anexa el informe médico con el diagnóstico, la razón del traslado y la distancia recorrida. La póliza permite someter la solicitud hasta un año desde la fecha del servicio.'
+			]
+		};
+	}
+	if (l.route === 'mi-momento') {
+		return {
+			basis: `Póliza ${l.planName}: beneficio Mi Momento.`,
+			paragraphs: [
+				'El beneficio Mi Momento reembolsa $200, una sola vez, por una consulta de planificación de fertilidad.',
+				`El servicio reclamado, ${service}, está dentro de este beneficio. Beneficio aplicable: ${l.benefit}.`,
+				'La póliza permite someter la solicitud hasta un año desde la fecha del servicio.'
+			]
+		};
+	}
 	if (l.insurer === 'first-medical') {
 		return {
 			basis:
@@ -110,7 +166,7 @@ export function benefitExplanation(l: LetterInput & { benefit: string }): Benefi
 		return {
 			basis: `Póliza ${l.planName}: beneficio Contigo Fit.`,
 			paragraphs: [
-				'El beneficio Contigo Fit reembolsa $20 mensuales, hasta 12 meses, por acupuntura, masaje terapéutico o reflexología con un proveedor certificado y licenciado.',
+				'El beneficio Contigo Fit reembolsa $20 mensuales, hasta 12 meses, por gimnasio, entrenador, yoga, acupuntura, masaje terapéutico o reflexología con un proveedor certificado y licenciado.',
 				`El servicio reclamado, ${service}, es uno de los servicios que cubre Contigo Fit. Beneficio aplicable: ${l.benefit}.`,
 				met.length
 					? `El asegurado cumple con los requisitos del beneficio: ${met.join(', ')}.`

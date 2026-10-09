@@ -9,7 +9,9 @@ export type RouteId =
 	| 'vision'
 	| 'post-stabilization'
 	| 'ambulance'
-	| 'mi-momento';
+	| 'mi-momento'
+	// First Medical only; not a Triple-S route, so it is not in ROUTES.
+	| 'cannabis';
 
 export const PLANS: { id: PlanId; name: string }[] = [
 	{ id: 'directo-bronce', name: 'Triple-S Directo Bronce 2027' },
@@ -56,8 +58,8 @@ export const ROUTES: Route[] = [
 	},
 	{
 		id: 'contigo-fit',
-		label: 'Contigo Fit: acupuntura, masaje terapéutico o reflexología',
-		reason: 'Beneficio Contigo Fit: acupuntura, masaje terapéutico o reflexología por proveedor licenciado.',
+		label: 'Contigo Fit: gimnasio, entrenador, yoga, acupuntura, masaje o reflexología',
+		reason: 'Beneficio Contigo Fit: gimnasio, entrenador, yoga, acupuntura, masaje terapéutico o reflexología por proveedor licenciado.',
 		amount: '$20 al mes, hasta 12 meses',
 		conditions: [
 			'Completar la evaluación de salud (HRA) en la app Mi Triple-S.',
