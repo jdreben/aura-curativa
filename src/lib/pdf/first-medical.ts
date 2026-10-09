@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import type { PDFFont, PDFPage } from 'pdf-lib';
-import type { Patient } from '../claim.ts';
+import type { Accident, Patient } from '../claim.ts';
 import { isoToForm, winAnsi } from './triple-s.ts';
 
 export const FIRST_MEDICAL = {
@@ -11,6 +11,7 @@ export const FIRST_MEDICAL = {
 export type FirstMedicalForm = {
 	patient: Patient & { dob: string };
 	vision: boolean;
+	accident: Accident | null;
 	lines: { date: string; description: string; paid: string }[];
 };
 
@@ -43,6 +44,11 @@ export async function fillFirstMedical(template: Uint8Array, f: FirstMedicalForm
 	w(p.phone, 40, 501, 10, 255);
 	w(p.altPhone, 310, 501, 10, 255);
 	w('X', p.hasOtherCoverage ? 149 : 178, 474, 9);
+	if (p.hasOtherCoverage) {
+		w(p.otherPlanName, 378, 474, 9, 190);
+		w(p.otherPolicyNumber, 388, 453, 9, 180);
+	}
+	if (f.accident?.kind) w('X', { auto: 212, trabajo: 342, otro: 454 }[f.accident.kind], 426, 9);
 	// "Proveedor no acepta el plan" is the claim reason; the provider's own fields stay blank for them to fill.
 	w('X', 212, 415, 9);
 

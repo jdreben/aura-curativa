@@ -61,7 +61,15 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupNumber: '0001234',
 			groupName: 'Empresa Ejemplo, Inc.',
 			hasOtherCoverage: false,
+			otherPlanName: '',
+			otherPolicyNumber: '',
+			otherGroupNumber: '',
+			otherPhone: '',
+			otherFax: '',
+			otherAddress: '',
 			medicareEligible: false,
+			medicareId: '',
+			medicarePart: '',
 			plan: 'pocket-plata',
 			dob: '1986-03-14'
 		}
@@ -85,7 +93,15 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupNumber: '0005678',
 			groupName: 'Cooperativa Ejemplo',
 			hasOtherCoverage: false,
+			otherPlanName: '',
+			otherPolicyNumber: '',
+			otherGroupNumber: '',
+			otherPhone: '',
+			otherFax: '',
+			otherAddress: '',
 			medicareEligible: false,
+			medicareId: '',
+			medicarePart: '',
 			plan: 'directo-plata',
 			dob: '1979-11-02'
 		}
@@ -109,7 +125,15 @@ export const demoPatients = (): IntakeRecord[] => [
 			groupNumber: '0009012',
 			groupName: 'Municipio Ejemplo',
 			hasOtherCoverage: true,
+			otherPlanName: 'MCS Classicare',
+			otherPolicyNumber: 'MCS778899001',
+			otherGroupNumber: '4455',
+			otherPhone: '(787) 555-0300',
+			otherFax: '',
+			otherAddress: 'PO Box 9023547, San Juan, PR 00902',
 			medicareEligible: false,
+			medicareId: '',
+			medicarePart: '',
 			plan: 'otro',
 			dob: '1991-07-25'
 		}

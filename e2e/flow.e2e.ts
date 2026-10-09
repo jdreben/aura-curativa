@@ -199,6 +199,44 @@ test('?demo fills the wizard so it clicks straight through', async ({ page }) =>
 	await expect(page.getByRole('textbox', { name: 'Email del proveedor' })).toHaveValue('proveedor@example.com');
 });
 
+test('other insurance and accident open the fields each form asks for', async ({ page }) => {
+	await page.goto('/reclamar?plan=pocket-plata&servicio=acupuntura&demo=');
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuar' }).click();
+
+	await expect(page.getByRole('textbox', { name: 'Número de póliza*' })).toHaveCount(0);
+	await page.getByRole('checkbox', { name: 'Tengo otro seguro médico' }).check();
+	await page.getByRole('checkbox', { name: 'El servicio es por un accidente o lesión' }).check();
+	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
+	await expect(page.getByText('Falta el nombre y el número de póliza de su otro seguro.')).toBeVisible();
+	await expect(page.getByText('Indique el tipo de accidente.')).toBeVisible();
+
+	await page.getByRole('textbox', { name: 'Nombre del otro plan médico*' }).fill('MCS Classicare');
+	await page.getByRole('textbox', { name: 'Número de póliza*' }).fill('MCS778899001');
+	await expect(page.getByRole('textbox', { name: 'Dirección del otro seguro' })).toBeVisible();
+	await page.getByRole('radio', { name: 'Accidente en el trabajo' }).check();
+	await page.getByLabel('Fecha del accidente*').fill('2026-09-30');
+	await page.getByRole('radio', { name: 'No' }).first().check();
+	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
+
+	await expect(page.getByText('Revise su formulario')).toBeVisible();
+	await expect(page.getByText('MCS Classicare · MCS778899001')).toBeVisible();
+	await expect(page.getByText('Accidente en el trabajo · 09/30/2026')).toBeVisible();
+});
+
+test('First Medical asks only for the other plan and the kind of accident', async ({ page }) => {
+	await page.goto('/reclamar?plan=fm-silver&servicio=especialista&demo=');
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuar' }).click();
+	await page.getByRole('checkbox', { name: 'Tengo otro seguro médico' }).check();
+	await page.getByRole('checkbox', { name: 'El servicio es por un accidente o lesión' }).check();
+	await expect(page.getByRole('textbox', { name: 'Número de contrato*' })).toHaveCount(2);
+	await expect(page.getByRole('textbox', { name: 'Dirección del otro seguro' })).toHaveCount(0);
+	await expect(page.getByRole('checkbox', { name: 'Soy elegible a Medicare' })).toHaveCount(0);
+	await expect(page.getByLabel('Fecha del accidente*')).toHaveCount(0);
+	await expect(page.getByRole('radio', { name: 'Accidente de automóvil' })).toBeVisible();
+});
+
 test('claim page without a valid plan says so', async ({ page }) => {
 	await page.goto('/reclamar?plan=nope&servicio=especialista');
 	await expect(page.getByText('No encontramos un reembolso que preparar.')).toBeVisible();

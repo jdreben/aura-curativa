@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import type { PDFFont, PDFPage } from 'pdf-lib';
-import type { Patient } from '../claim.ts';
+import type { Accident, Patient } from '../claim.ts';
 import { emptyProvider, emptyVisit, patientFullName } from '../claim.ts';
 import type { Insurer, ServiceId } from '../estimate.ts';
 import type { BenefitExplanation } from '../justify.ts';
@@ -24,6 +24,7 @@ export type PatientPacketInput = {
 	steps: string[];
 	letter: string[];
 	explanation: BenefitExplanation;
+	accident: Accident | null;
 };
 
 type Fonts = { regular: PDFFont; bold: PDFFont };
@@ -215,11 +216,13 @@ export async function buildPatientPacket(template: Uint8Array, i: PatientPacketI
 							amountPaid: l.paid
 						}))
 					},
-					i.patient
+					i.patient,
+					i.accident
 				)
 			: await fillFirstMedical(template, {
 					patient: i.patient,
 					vision: i.route === 'vision' || i.serviceId === 'espejuelos',
+					accident: i.accident,
 					lines
 				});
 	for (const pg of await out.copyPages(form, form.getPageIndices())) out.addPage(pg);

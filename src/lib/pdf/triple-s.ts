@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import type { PDFFont, PDFForm } from 'pdf-lib';
-import type { Patient, Provider, Visit } from '../claim';
+import type { Accident, Patient, Provider, Visit } from '../claim';
 import { patientFullName } from '../claim';
 
 export const TRIPLE_S = {
@@ -17,6 +17,13 @@ export const winAnsi = (s: string) =>
 export function isoToForm(iso: string): string {
 	const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
 	return m ? `${m[2]}/${m[3]}/${m[1]}` : iso;
+}
+
+export function to12h(hhmm: string): string {
+	const m = /^(\d{2}):(\d{2})$/.exec(hhmm);
+	if (!m) return hhmm;
+	const h = Number(m[1]);
+	return `${h % 12 || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
 // The form pre-prints "Z U" before the contract box.
@@ -40,7 +47,8 @@ export async function fillTripleS(
 	template: Uint8Array,
 	provider: Provider,
 	visit: Visit,
-	patient: Patient
+	patient: Patient,
+	accident: Accident | null = null
 ): Promise<PDFDocument> {
 	const doc = await PDFDocument.load(template);
 	const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -72,7 +80,37 @@ export async function fillTripleS(
 	}
 
 	form.getRadioGroup('Group1').select(patient.hasOtherCoverage ? 'SÍ' : 'NO');
+	if (patient.hasOtherCoverage) {
+		set('16 NOMBRE DE LA OTRA COMPAÑIA DE SEGURO O PLAN MÉDICO', patient.otherPlanName);
+		set('18 NÚMERO DE PÓLI ZA', patient.otherPolicyNumber);
+		set('19 NÚMERO DE GRUPO', patient.otherGroupNumber);
+		set('20 NÚMERO DE TELÉFONO DEL OTRO SEGURO', patient.otherPhone);
+		set('21 NÚMERO DE FAX DEL OTRO SEGURO', patient.otherFax);
+		set('22 DIRECCIÓN DEL OTRO SEGURO', patient.otherAddress);
+	}
 	form.getRadioGroup('Group2').select(patient.medicareEligible ? 'Sí' : 'NO');
+	if (patient.medicareEligible) {
+		// Item 17 (HICN) has no form field, so it is drawn in its box.
+		const hicn = winAnsi(patient.medicareId.trim().toUpperCase());
+		if (hicn) doc.getPage(0).drawText(hicn, { x: 312, y: 540, size: 10, font, color: rgb(0, 0, 0) });
+		const parts = form.getRadioGroup('Group3').getOptions();
+		if (patient.medicarePart) form.getRadioGroup('Group3').select(parts[patient.medicarePart === 'A' ? 0 : 1]);
+	}
+	if (accident?.kind) {
+		// Group4 option names are garbled in the PDF; widgets run auto, work, other from left to right.
+		const kinds = form.getRadioGroup('Group4').getOptions();
+		form.getRadioGroup('Group4').select(kinds[{ auto: 0, trabajo: 1, otro: 2 }[accident.kind]]);
+		if (accident.kind === 'otro') set('Describe', accident.description);
+		set('AccidentDate', isoToForm(accident.date), 8);
+		set('AccidateTime', to12h(accident.time), 7);
+		const yesNo = (group: string, v: boolean | null) => {
+			if (v === null) return;
+			const [no, yes] = form.getRadioGroup(group).getOptions();
+			form.getRadioGroup(group).select(v ? yes : no);
+		};
+		yesNo('Group5', accident.causedByOther);
+		yesNo('Group6', accident.otherLiable);
+	}
 
 	set('30 NOMBRE DEL PROVEEDOR  SUPLIDOR', provider.name);
 	set('NationalProvID', provider.npi);

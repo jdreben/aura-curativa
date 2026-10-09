@@ -146,12 +146,16 @@ export type StepsInput = {
 	conditions: string[];
 	deadline: string;
 	deadlineDays: number;
+	otherCoverage: boolean;
 };
 
 // In the order the patient does them: requirements, then the provider, then signatures, then mailing.
 export function packetSteps(s: StepsInput): string[] {
 	const send = (when: string) =>
 		`Envíe el formulario, la Explicación de Beneficios${s.received ? ', la carta de solicitud' : ''} y el recibo original ${when}. Guarde una copia.`;
+	const otherPlan = s.otherCoverage
+		? ['Pida a su otro seguro la Explicación de Beneficios (EOB) de este servicio y anéxela: muestra lo que pagó o denegó.']
+		: [];
 	if (s.received) {
 		return [
 			...s.conditions,
@@ -160,6 +164,7 @@ export function packetSteps(s: StepsInput): string[] {
 				: 'Pida a su proveedor un recibo original con su NPI, el diagnóstico (ICD-10) y los códigos CPT.',
 			s.insurer === 'triple-s' ? 'Firme y feche la sección D del formulario.' : 'Firme y feche la sección 4 del formulario.',
 			'Firme la carta de solicitud.',
+			...otherPlan,
 			send(`antes del ${s.deadline || 'plazo de su plan'}`)
 		];
 	}
@@ -168,6 +173,7 @@ export function packetSteps(s: StepsInput): string[] {
 		...s.conditions,
 		`Lleve este paquete a su cita. ${appointmentRequest(s.insurer)}`,
 		'Después del servicio, escriba la fecha y lo pagado en el formulario, y fírmelo.',
+		...otherPlan,
 		send(`dentro de ${deadlineWords(s.deadlineDays)} desde la fecha del servicio`)
 	];
 }

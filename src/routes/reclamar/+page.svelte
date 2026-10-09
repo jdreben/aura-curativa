@@ -4,10 +4,12 @@
 	import { page } from '$app/state';
 	import Field from '#lib/components/Field.svelte';
 	import PatientFields from '#lib/components/PatientFields.svelte';
+	import OtherCoverageFields from '#lib/components/OtherCoverageFields.svelte';
+	import AccidentFields from '#lib/components/AccidentFields.svelte';
 	import Linked from '#lib/components/Linked.svelte';
 	import Problems from '#lib/components/Problems.svelte';
 	import SendTo from '#lib/components/SendTo.svelte';
-	import { emptyPatient, patientFullName } from '#lib/claim.ts';
+	import { ACCIDENT_KINDS, emptyAccident, emptyPatient, patientFullName } from '#lib/claim.ts';
 	import { demoPatients } from '#lib/demo.ts';
 	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
@@ -42,6 +44,8 @@
 	let paid = $state('');
 	let answers = $state<Record<string, boolean>>({});
 	let patient = $state({ ...emptyPatient(), state: 'PR' });
+	let isAccident = $state(false);
+	let accident = $state(emptyAccident());
 	let editing = $state(false);
 	let attempted = $state(false);
 	let myEmail = $state('');
@@ -71,7 +75,16 @@
 		...(patient.contractNumber.trim() ? [] : ['Falta su número de contrato (vea su tarjeta del plan).']),
 		...(patient.address1.trim() && patient.city.trim() && patient.zip.trim() ? [] : ['Falta su dirección postal completa.']),
 		...(patient.phone.trim() ? [] : ['Falta su teléfono.']),
-		...(insurer === 'first-medical' && !patient.dob ? ['Falta su fecha de nacimiento.'] : [])
+		...(insurer === 'first-medical' && !patient.dob ? ['Falta su fecha de nacimiento.'] : []),
+		...(patient.hasOtherCoverage && !(patient.otherPlanName.trim() && patient.otherPolicyNumber.trim())
+			? [`Falta el nombre y el número de ${insurer === 'triple-s' ? 'póliza' : 'contrato'} de su otro seguro.`]
+			: []),
+		...(insurer === 'triple-s' && patient.medicareEligible && !patient.medicareId.trim() ? ['Falta su número de Medicare.'] : []),
+		...(isAccident && !accident.kind ? ['Indique el tipo de accidente.'] : []),
+		...(isAccident && insurer === 'triple-s' && !accident.date ? ['Falta la fecha del accidente.'] : []),
+		...(isAccident && insurer === 'triple-s' && accident.kind === 'otro' && !accident.description.trim()
+			? ['Describa el accidente.']
+			: [])
 	]);
 	const warnings = $derived(questions.filter((q) => answers[q.id] === false && q.warnIfNo).map((q) => q.warnIfNo as string));
 
@@ -163,7 +176,8 @@
 				preauth,
 				conditions: est?.conditions ?? [],
 				deadline,
-				deadlineDays: rules.deadlineDays
+				deadlineDays: rules.deadlineDays,
+				otherCoverage: patient.hasOtherCoverage
 			});
 			const letterInput = {
 				insurer,
@@ -188,7 +202,8 @@
 				deadline,
 				steps,
 				letter: letterParagraphs(letterInput),
-				explanation: benefitExplanation({ ...letterInput, benefit: est?.benefit ?? '' })
+				explanation: benefitExplanation({ ...letterInput, benefit: est?.benefit ?? '' }),
+				accident: isAccident ? $state.snapshot(accident) : null
 			});
 			const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
 			pdf = { status: 'ready', url: URL.createObjectURL(blob), blob };
@@ -345,10 +360,12 @@
 						<Field label="Fecha de nacimiento" type="date" bind:value={patient.dob} required />
 					{/if}
 				</div>
+				<OtherCoverageFields bind:patient {insurer} />
 				<label class="mt-4 flex items-center gap-2 text-sm">
-					<input type="checkbox" bind:checked={patient.hasOtherCoverage} class="rounded text-teal-700" />
-					Tengo otro seguro médico
+					<input type="checkbox" bind:checked={isAccident} class="rounded text-teal-700" />
+					El servicio es por un accidente o lesión
 				</label>
+				{#if isAccident}<AccidentFields bind:accident {insurer} />{/if}
 				{#if attempted}<div class="mt-4"><Problems problems={youProblems} /></div>{/if}
 			{:else if step === 'review'}
 				{#if pdf.status === 'loading'}
@@ -369,6 +386,8 @@
 							<dt class="text-slate-500">Fecha</dt><dd>{isoToForm(date)}</dd>
 							<dt class="text-slate-500">Pagó</dt><dd>${Number.parseFloat(paid).toFixed(2)}</dd>
 						{/if}
+						{#if patient.hasOtherCoverage}<dt class="text-slate-500">Otro seguro</dt><dd>{patient.otherPlanName} · {patient.otherPolicyNumber}</dd>{/if}
+						{#if isAccident && accident.kind}<dt class="text-slate-500">Accidente</dt><dd>{ACCIDENT_KINDS.find((k) => k.id === accident.kind)?.label}{accident.date ? ` · ${isoToForm(accident.date)}` : ''}</dd>{/if}
 					</dl>
 					<a
 						href={pdf.url}
@@ -394,7 +413,12 @@
 							<Field label="Cuánto pagó ($)" bind:value={paid} inputmode="decimal" required />
 						</div>
 					{/if}
-					<div class="mt-4"><PatientFields bind:patient showPlan={false} /></div>
+					<div class="mt-4"><PatientFields bind:patient showPlan={false} {insurer} /></div>
+					<label class="mt-4 flex items-center gap-2 text-sm">
+						<input type="checkbox" bind:checked={isAccident} class="rounded text-teal-700" />
+						El servicio es por un accidente o lesión
+					</label>
+					{#if isAccident}<AccidentFields bind:accident {insurer} />{/if}
 					{#if insurer === 'first-medical'}
 						<div class="mt-4 w-48"><Field label="Fecha de nacimiento" type="date" bind:value={patient.dob} /></div>
 					{/if}

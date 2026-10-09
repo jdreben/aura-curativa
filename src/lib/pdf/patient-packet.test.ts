@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { demoPatients } from '../demo';
 import { benefitExplanation, letterParagraphs, packetSteps } from '../justify';
 import { buildPatientPacket } from './patient-packet';
+import { to12h } from './triple-s';
 import type { PatientPacketInput } from './patient-packet';
 
 const letterInput = (insurer: 'triple-s' | 'first-medical') => ({
@@ -30,7 +31,8 @@ const base = (insurer: 'triple-s' | 'first-medical'): PatientPacketInput => ({
 	deadline: '10/09/2027',
 	steps: ['Paso uno.', 'Paso dos.'],
 	letter: letterParagraphs(letterInput(insurer)),
-	explanation: benefitExplanation({ ...letterInput(insurer), benefit: '$20 al mes' })
+	explanation: benefitExplanation({ ...letterInput(insurer), benefit: '$20 al mes' }),
+	accident: null
 });
 
 describe('patient packet', () => {
@@ -58,12 +60,35 @@ describe('patient packet', () => {
 		expect(benefitExplanation({ ...letterInput('triple-s'), route: 'vision', benefit: 'x' }).basis).toContain('exclusión 52');
 	});
 
+	it('accident time prints as 12-hour', () => {
+		expect(to12h('14:05')).toBe('2:05 PM');
+		expect(to12h('00:30')).toBe('12:30 AM');
+	});
+
+	it('other insurance adds the other plan\'s EOB before mailing', () => {
+		const steps = packetSteps({ insurer: 'triple-s', received: true, preauth: null, conditions: [], deadline: '', deadlineDays: 365, otherCoverage: true });
+		const eob = steps.findIndex((s) => s.includes('otro seguro'));
+		expect(eob).toBeGreaterThan(-1);
+		expect(eob).toBe(steps.length - 2);
+	});
+
+	it('packet builds with other insurance, Medicare and an accident on both forms', async () => {
+		const accident = { kind: 'otro' as const, description: 'Caída en la casa', date: '2026-09-30', time: '14:05', causedByOther: true, otherLiable: false };
+		const patient = { ...demoPatients()[2].patient, medicareEligible: true, medicareId: '1EG4TE5MK73', medicarePart: 'B' as const };
+		for (const insurer of ['triple-s', 'first-medical'] as const) {
+			const t = new Uint8Array(readFileSync(`static/forms/${insurer === 'triple-s' ? 'triple-s' : 'first-medical'}-reembolso.pdf`));
+			const bytes = await buildPatientPacket(t, { ...base(insurer), patient, accident });
+			expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(3);
+			if (process.env.COB_OUT) writeFileSync(`${process.env.COB_OUT}-${insurer}.pdf`, bytes);
+		}
+	});
+
 	it('steps run in the order the patient does them', () => {
-		const after = packetSteps({ insurer: 'triple-s', received: true, preauth: null, conditions: ['Complete la HRA.'], deadline: '10/09/2027', deadlineDays: 365 });
+		const after = packetSteps({ insurer: 'triple-s', received: true, preauth: null, conditions: ['Complete la HRA.'], deadline: '10/09/2027', deadlineDays: 365, otherCoverage: false });
 		expect(after[0]).toBe('Complete la HRA.');
 		expect(after.findIndex((s) => s.includes('sección E'))).toBeLessThan(after.findIndex((s) => s.includes('sección D')));
 		expect(after.at(-1)).toContain('Envíe');
-		const before = packetSteps({ insurer: 'first-medical', received: false, preauth: 'Pida autorización previa.', conditions: [], deadline: '', deadlineDays: 90 });
+		const before = packetSteps({ insurer: 'first-medical', received: false, preauth: 'Pida autorización previa.', conditions: [], deadline: '', deadlineDays: 90, otherCoverage: false });
 		expect(before[0]).toBe('Pida autorización previa.');
 		expect(before.findIndex((s) => s.includes('Lleve este paquete'))).toBeLessThan(before.findIndex((s) => s.startsWith('Después del servicio')));
 		expect(before.at(-1)).toContain('Explicación de Beneficios');

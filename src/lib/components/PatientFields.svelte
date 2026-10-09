@@ -1,9 +1,15 @@
 <script lang="ts">
 	import Field from './Field.svelte';
+	import OtherCoverageFields from './OtherCoverageFields.svelte';
+	import type { Insurer } from '../estimate.ts';
 	import type { Patient } from '../claim.ts';
 	import { PLANS } from '../plans.ts';
 
-	let { patient = $bindable(), showPlan = true }: { patient: Patient; showPlan?: boolean } = $props();
+	let {
+		patient = $bindable(),
+		showPlan = true,
+		insurer = 'triple-s'
+	}: { patient: Patient; showPlan?: boolean; insurer?: Insurer } = $props();
 </script>
 
 <div class="grid gap-4 sm:grid-cols-4">
@@ -37,18 +43,4 @@
 	<Field label="Código postal" bind:value={patient.zip} required inputmode="numeric" />
 	<Field label="Teléfono" bind:value={patient.phone} type="tel" required />
 </div>
-<div class="mt-4 flex flex-wrap gap-6 text-sm">
-	<label class="flex items-center gap-2">
-		<input type="checkbox" bind:checked={patient.hasOtherCoverage} class="rounded text-teal-700" />
-		Tiene otro seguro médico
-	</label>
-	<label class="flex items-center gap-2">
-		<input type="checkbox" bind:checked={patient.medicareEligible} class="rounded text-teal-700" />
-		Elegible a Medicare
-	</label>
-</div>
-{#if patient.hasOtherCoverage}
-	<p class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-		Incluya la Explicación de Beneficios (EOB) del otro seguro y complete la sección B a mano.
-	</p>
-{/if}
+<OtherCoverageFields bind:patient {insurer} />

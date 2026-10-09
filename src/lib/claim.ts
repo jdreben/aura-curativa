@@ -48,10 +48,45 @@ export type Patient = {
 	groupNumber: string;
 	groupName: string;
 	hasOtherCoverage: boolean;
+	// Flat, not nested: decodePayload restores dropped blanks with a shallow merge.
+	otherPlanName: string;
+	otherPolicyNumber: string;
+	otherGroupNumber: string;
+	otherPhone: string;
+	otherFax: string;
+	otherAddress: string;
 	medicareEligible: boolean;
+	medicareId: string;
+	medicarePart: 'A' | 'B' | '';
 	plan: PlanId | '';
 	dob: string;
 };
+
+export type AccidentKind = 'auto' | 'trabajo' | 'otro';
+
+export type Accident = {
+	kind: AccidentKind | '';
+	description: string;
+	date: string;
+	time: string;
+	causedByOther: boolean | null;
+	otherLiable: boolean | null;
+};
+
+export const emptyAccident = (): Accident => ({
+	kind: '',
+	description: '',
+	date: '',
+	time: '',
+	causedByOther: null,
+	otherLiable: null
+});
+
+export const ACCIDENT_KINDS: { id: AccidentKind; label: string }[] = [
+	{ id: 'auto', label: 'Accidente de automóvil' },
+	{ id: 'trabajo', label: 'Accidente en el trabajo' },
+	{ id: 'otro', label: 'Otro tipo de accidente' }
+];
 
 export type Insurer = 'triple-s';
 
@@ -111,7 +146,15 @@ export const emptyPatient = (): Patient => ({
 	groupNumber: '',
 	groupName: '',
 	hasOtherCoverage: false,
+	otherPlanName: '',
+	otherPolicyNumber: '',
+	otherGroupNumber: '',
+	otherPhone: '',
+	otherFax: '',
+	otherAddress: '',
 	medicareEligible: false,
+	medicareId: '',
+	medicarePart: '',
 	plan: '',
 	dob: ''
 });
