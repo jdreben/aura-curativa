@@ -51,7 +51,7 @@ accepts on their phone, and the provider prints the packet once the patient's co
 ## Demo shortcut
 
 Add `?demo` to the URL (e.g. `/?demo`, then an example and *¡Empecemos!*, or `/proveedor?demo`) to fill
-every form with synthetic data. There is no visible button for it.
+every form with synthetic data. The *Datos de ejemplo* button on the claim wizard and the provider page does the same.
 
 ## Privacy model
 

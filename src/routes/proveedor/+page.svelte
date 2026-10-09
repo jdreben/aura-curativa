@@ -74,7 +74,7 @@
 		reset();
 	}
 
-	// ?demo fills synthetic data so a live demo can skip typing; there is no visible button.
+	// ?demo fills synthetic data on load so a live demo can skip typing.
 	if (page.url.searchParams.has('demo')) loadDemo();
 
 	function reset() {
@@ -127,6 +127,13 @@
 			Prepare la reclamación completa. El paciente solo la revisa y la acepta desde su teléfono.
 		</p>
 	</div>
+	<button
+		type="button"
+		onclick={loadDemo}
+		class="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+	>
+		Datos de ejemplo
+	</button>
 </div>
 
 <form

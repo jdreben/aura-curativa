@@ -129,7 +129,7 @@
 		if (stepIndex > 0) step = flow[stepIndex - 1];
 	}
 
-	// ?demo fills synthetic data so a live demo can click straight through; there is no visible button.
+	// Synthetic data so a demo can click straight through every step; ?demo fills it on load.
 	function fillDemo() {
 		const demo = demoPatients()[insurer === 'triple-s' ? 0 : 1].patient;
 		paid = route === 'vision' ? '180' : '90';
@@ -252,7 +252,18 @@
 			<p class="mt-1">Escoja su plan y servicio en la página principal.</p>
 		</div>
 	{:else}
-		<h1 class="mt-4 text-2xl font-bold text-teal-900">Preparemos su reembolso</h1>
+		<div class="mt-4 flex items-start justify-between gap-3">
+			<h1 class="text-2xl font-bold text-teal-900">Preparemos su reembolso</h1>
+			{#if step !== 'review'}
+				<button
+					type="button"
+					onclick={fillDemo}
+					class="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+				>
+					Datos de ejemplo
+				</button>
+			{/if}
+		</div>
 		<div class="mt-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm leading-relaxed text-teal-950">
 			<p class="font-semibold">{planName}</p>
 			<p>{serviceName}</p>
