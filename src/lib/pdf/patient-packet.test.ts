@@ -42,7 +42,7 @@ describe('patient packet', () => {
 		const t = new Uint8Array(readFileSync('static/forms/triple-s-reembolso.pdf'));
 		const bytes = await buildPatientPacket(t, base('triple-s'));
 		const full = await pages(bytes);
-		expect(full).toBeGreaterThanOrEqual(4);
+		expect(full).toBe(4);
 		expect(await pages(await buildPatientPacket(t, base('triple-s'), { cover: false }))).toBe(full - 1);
 		if (process.env.TS_OUT) writeFileSync(process.env.TS_OUT, bytes);
 	});
@@ -50,11 +50,18 @@ describe('patient packet', () => {
 	it('First Medical: the letter is in the packet before the service too; steps PDF is one page', async () => {
 		const t = new Uint8Array(readFileSync('static/forms/first-medical-reembolso.pdf'));
 		const bytes = await buildPatientPacket(t, base('first-medical'));
-		expect(await pages(bytes)).toBeGreaterThanOrEqual(3);
+		expect(await pages(bytes)).toBe(3);
 		if (process.env.FM_OUT) writeFileSync(process.env.FM_OUT, bytes);
 		const before = await buildPatientPacket(t, { ...base('first-medical'), received: false, date: '', paid: '' });
-		expect(await pages(before)).toBeGreaterThanOrEqual(3);
+		expect(await pages(before)).toBe(3);
 		expect(await pages(await buildStepsPdf(base('first-medical')))).toBe(1);
+	});
+
+	it('the letter stays on one page even with a long explanation', async () => {
+		const t = new Uint8Array(readFileSync('static/forms/first-medical-reembolso.pdf'));
+		const long = base('first-medical');
+		const many = { ...long, explanation: { ...long.explanation, paragraphs: [...long.explanation.paragraphs, ...long.explanation.paragraphs] } };
+		expect(await pages(await buildPatientPacket(t, many))).toBe(3);
 	});
 
 	it('benefit explanation cites the policy for each route', () => {
@@ -94,7 +101,7 @@ describe('patient packet', () => {
 		for (const insurer of ['triple-s', 'first-medical'] as const) {
 			const t = new Uint8Array(readFileSync(`static/forms/${insurer === 'triple-s' ? 'triple-s' : 'first-medical'}-reembolso.pdf`));
 			const bytes = await buildPatientPacket(t, { ...base(insurer), patient, accident });
-			expect((await PDFDocument.load(bytes)).getPageCount()).toBeGreaterThan(3);
+			expect((await PDFDocument.load(bytes)).getPageCount()).toBe(insurer === 'triple-s' ? 4 : 3);
 			if (process.env.COB_OUT) writeFileSync(`${process.env.COB_OUT}-${insurer}.pdf`, bytes);
 		}
 	});

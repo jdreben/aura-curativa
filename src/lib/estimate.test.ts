@@ -61,7 +61,12 @@ describe('estimate', () => {
 
 	it('First Medical caps therapy and chiropractic at 20 combined a year', () => {
 		expect(estimate('fm-silver', 'quiropractico', 60)?.conditions.join(' ')).toContain('20');
-		expect(estimate('fm-silver', 'especialista', 60)?.conditions.join(' ')).not.toContain('20');
+		expect(estimate('fm-silver', 'especialista', 60)?.conditions.join(' ')).not.toContain('20 terapias');
+	});
+
+	it('First Medical names the 2027 benefit that covers the service', () => {
+		expect(estimate('fm-gold', 'especialista', 60)?.conditions[0]).toContain('«Visitas médicas al Especialista»');
+		expect(estimate('fm-gold', 'quiropractico', 60)?.conditions[0]).toContain('quiropráctico');
 	});
 
 	it('First Medical excludes acupuncture', () => {

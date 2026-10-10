@@ -12,7 +12,7 @@
 	import SendTo from '#lib/components/SendTo.svelte';
 	import { ACCIDENT_KINDS, emptyAccident, emptyPatient, patientFullName } from '#lib/claim.ts';
 	import { demoPatients } from '#lib/demo.ts';
-	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
+	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate, fmCoverage } from '#lib/estimate.ts';
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
 	import { benefitExplanation, letterParts, packetSteps, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
 	import type { Delivery } from '#lib/justify.ts';
@@ -255,7 +255,11 @@
 				deadline,
 				steps: stepsFor(received ? 'print' : 'before'),
 				letter: letterParts(letterInput),
-				explanation: benefitExplanation({ ...letterInput, benefit: est?.benefit ?? '' }),
+				explanation: benefitExplanation({
+					...letterInput,
+					benefit: est?.benefit ?? '',
+					coverage: insurer === 'first-medical' ? fmCoverage(serviceId) : null
+				}),
 				accident: isAccident ? $state.snapshot(accident) : null
 			};
 			const asPdf = (b: Uint8Array) => new Blob([b as BlobPart], { type: 'application/pdf' });
@@ -518,7 +522,7 @@
 				<p class="mt-1 text-sm text-slate-600">
 					{insurer === 'triple-s'
 						? 'Su proveedor tiene que completar y firmar la sección E y darle el recibo.'
-						: 'Su proveedor tiene que darle el recibo original con su NPI, el diagnóstico y los códigos.'}
+						: 'Su proveedor tiene que completar la Sección 3 y darle el recibo original con su NPI, el diagnóstico y los códigos.'}
 				</p>
 				<div class="mt-5 grid gap-3 sm:grid-cols-2">
 					<button type="button" class="{primary} text-left" onclick={() => pick('print')}>

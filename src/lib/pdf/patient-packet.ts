@@ -27,6 +27,8 @@ export type PatientPacketInput = {
 	accident: Accident | null;
 };
 
+const upperFirst = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
 type Fonts = { regular: PDFFont; bold: PDFFont };
 const BLACK = rgb(0, 0, 0);
 const GRAY = rgb(0.4, 0.4, 0.4);
@@ -66,7 +68,7 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 		['Plan', i.planName],
 		['Servicio', i.serviceName],
 		['Reembolso esperado', i.expected],
-		['Fecha límite', i.deadline || 'Según la fecha del servicio']
+		['Fecha límite', i.deadline || `${upperFirst(deadlineWords(CLAIM_RULES[i.insurer].deadlineDays))} desde la fecha del servicio`]
 	];
 	for (const [k, v] of rows) {
 		page.drawText(winAnsi(k), { x: 50, y, size: 10.5, font: f.regular, color: GRAY });
@@ -105,70 +107,79 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	);
 }
 
-// The request letter carries the benefit explanation, so the insurer reviews one document; it can run past a page.
-function drawLetter(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
+// Lays out the letter at one font size; with no page it only measures, returning where the text ends.
+function letterLayout(f: Fonts, i: PatientPacketInput, size: number, page: PDFPage | null): number {
 	const p = i.patient;
 	const left = 72;
 	const width = 468;
-	let page = doc.addPage([612, 792]);
+	const gap = size * 0.6;
 	let y = 740;
-	const room = (h: number) => {
-		if (y - h < 60) {
-			page = doc.addPage([612, 792]);
-			y = 740;
-		}
+	const at = (t: string, x: number, sz: number, font: PDFFont, color = BLACK) => {
+		if (page) page.drawText(winAnsi(t), { x, y, size: sz, font, color });
 	};
-	const line = (text: string, size = 10.5, font = f.regular, color = BLACK) => {
-		room(size * 1.35);
-		page.drawText(winAnsi(text), { x: left, y, size, font, color });
-		y -= size * 1.35;
+	const line = (t: string, sz = size, font = f.regular) => {
+		at(t, left, sz, font);
+		y -= sz * 1.35;
 	};
-	const para = (text: string, size = 10.5, font = f.regular) => {
-		for (const l of wrap(text, font, size, width)) line(l, size, font);
-		y -= 6;
+	const para = (t: string, sz = size, font = f.regular) => {
+		for (const l of wrap(t, font, sz, width)) line(l, sz, font);
+		y -= gap;
+	};
+	const rule = () => {
+		if (page) page.drawLine({ start: { x: left, y }, end: { x: left + width, y }, thickness: 0.5, color: GRAY });
 	};
 
 	const today = new Date();
 	const date = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
-	for (const l of [patientFullName(p), p.address1, `${p.city}, ${p.state} ${p.zip}`, p.phone].filter((s) => s.trim())) line(l);
-	y -= 8;
+	for (const l of [patientFullName(p), p.address1, `${p.city}, ${p.state} ${p.zip}`, p.phone].filter((t) => t.trim())) line(l);
+	y -= gap;
 	line(date);
-	y -= 10;
+	y -= gap;
 	for (const l of CLAIM_RULES[i.insurer].address) line(l);
-	y -= 8;
-	para(`Asunto: Solicitud de reembolso — Contrato ${p.contractNumber.toUpperCase()}`, 10.5, f.bold);
-	y -= 4;
+	y -= gap;
+	para(`Asunto: Solicitud de reembolso — Contrato ${p.contractNumber.toUpperCase()}`, size, f.bold);
 	line('Saludos:');
-	y -= 8;
+	y -= gap;
 	para(i.letter.request);
 
-	y -= 6;
-	para('Explicación de Beneficios para todos los servicios o suplidos reclamados', 11.5, f.bold);
+	para('Explicación de Beneficios para todos los servicios o suplidos reclamados', size + 1, f.bold);
 	const cols = [left, left + 80, left + 400];
-	room(40);
-	['Fecha', 'Servicio o suplido', 'Pagado'].forEach((h, n) => page.drawText(h, { x: cols[n], y, size: 9.5, font: f.bold, color: GRAY }));
-	y -= 6;
-	page.drawLine({ start: { x: left, y }, end: { x: left + width, y }, thickness: 0.5, color: GRAY });
-	y -= 14;
+	const small = size - 1;
+	['Fecha', 'Servicio o suplido', 'Pagado'].forEach((h, n) => at(h, cols[n], small, f.bold, GRAY));
+	y -= small * 0.6;
+	rule();
+	y -= small * 1.4;
 	const pending = 'Pendiente';
 	const cells = [i.received && i.date ? isoToForm(i.date) : pending, i.serviceName, i.received && i.paid ? `$${i.paid}` : pending];
-	const bottoms = cells.map((c, n) => paragraph(page, c, cols[n], y, f.regular, 10, n === 1 ? 310 : 68));
-	y = Math.min(...bottoms) - 2;
-	page.drawLine({ start: { x: left, y: y + 8 }, end: { x: left + width, y: y + 8 }, thickness: 0.5, color: GRAY });
-	y -= 10;
+	const wrapped = cells.map((c, n) => wrap(c, f.regular, small, n === 1 ? 310 : 68));
+	const top = y;
+	wrapped.forEach((ls, n) =>
+		ls.forEach((l, k) => {
+			y = top - k * small * 1.35;
+			at(l, cols[n], small, f.regular);
+		})
+	);
+	y = top - Math.max(...wrapped.map((ls) => ls.length)) * small * 1.35 + small * 0.6;
+	rule();
+	y -= small * 1.6;
 	para(`Reembolso solicitado: ${i.expected}`);
 	para(`Base en la póliza: ${i.explanation.basis}`);
 	for (const t of i.explanation.paragraphs) para(t);
-
-	y -= 4;
 	para(i.letter.closing);
-	room(70);
-	y -= 4;
+
 	line('Atentamente,');
-	y -= 30;
-	page.drawLine({ start: { x: left, y }, end: { x: 300, y }, thickness: 0.75, color: BLACK });
-	y -= 14;
+	y -= size * 2.4;
+	if (page) page.drawLine({ start: { x: left, y }, end: { x: 300, y }, thickness: 0.75, color: BLACK });
+	y -= size * 1.3;
 	line(patientFullName(p));
+	return y;
+}
+
+// The letter carries the benefit explanation and always fits on one page: it shrinks the type until it does.
+function drawLetter(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
+	const sizes = [10.5, 10, 9.5, 9, 8.5, 8, 7.5, 7];
+	const size = sizes.find((sz) => letterLayout(f, i, sz, null) >= 48) ?? sizes[sizes.length - 1];
+	letterLayout(f, i, size, doc.addPage([612, 792]));
 }
 
 export type PacketParts = { cover: boolean };

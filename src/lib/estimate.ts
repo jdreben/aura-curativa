@@ -108,6 +108,23 @@ export function inNetworkCost(plan: PatientPlanId, service: ServiceId): string |
 	return IN_NETWORK[plan as IndividualPlan]?.[service] ?? null;
 }
 
+// Benefit names as written in the First Medical Directo 2027 cubierta, so the answer can say the service is covered.
+const FM_COVERAGE: Partial<Record<ServiceId, string>> = {
+	pcp: 'Visitas médicas al Generalista',
+	especialista: 'Visitas médicas al Especialista',
+	subespecialista: 'Visitas médicas al Subespecialista',
+	'salud-mental': 'Visitas al Psiquiatra y Psicólogos',
+	nutricionista: 'Nutricionista',
+	fertilidad: 'Visitas al Ginecólogo / Obstetra (Especialista)',
+	laboratorio: 'Laboratorios y Rayos X',
+	radiologia: 'Laboratorios y Rayos X, y Pruebas Especializadas',
+	'terapia-fisica': 'Terapias físicas',
+	quiropractico: 'Visitas al quiropráctico y Manipulaciones de quiroprácticos',
+	cirugia: 'Cirugía en Oficina y Centro de Cirugía Ambulatoria'
+};
+
+export const fmCoverage = (service: ServiceId) => FM_COVERAGE[service] ?? null;
+
 // Usual billing codes, so the patient can ask the plan for a quote; the provider's receipt has the exact one.
 const CPT_HINT: Partial<Record<ServiceId, string>> = {
 	pcp: '99213 o 99214 (visita de paciente establecido)',
@@ -400,7 +417,9 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 				: [],
 			route: 'routine',
 			conditions: [
-				'Debe ser un servicio cubierto y médicamente necesario.',
+				FM_COVERAGE[service]
+					? `Servicio cubierto por su póliza 2027 («${FM_COVERAGE[service]}»). Debe ser médicamente necesario.`
+					: 'Debe ser un servicio cubierto y médicamente necesario.',
 				...(service === 'terapia-fisica' || service === 'quiropractico'
 					? ['Hasta 20 terapias y manipulaciones quiroprácticas combinadas por año contrato.']
 					: []),

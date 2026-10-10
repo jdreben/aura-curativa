@@ -163,7 +163,7 @@ test('patient who already got the service: guided form, review, fix, send to pro
 		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
-	expect(pdf.getPageCount()).toBeGreaterThanOrEqual(4);
+	expect(pdf.getPageCount()).toBe(4);
 });
 
 test('patient before the service: preauthorization warning, form to bring', async ({ page }) => {
@@ -189,14 +189,14 @@ test('patient before the service: preauthorization warning, form to bring', asyn
 	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
 	await expect(page.getByText('Llévelo a su cita o entrégueselo al proveedor')).toBeVisible();
-	await expect(page.getByText(/^Lleve este paquete a su cita\./)).toBeVisible();
+	await expect(page.getByText(/^Lleve este paquete a su cita o entrégueselo a su proveedor y pídale que complete y firme la Sección 3/)).toBeVisible();
 	await expect(page.getByText('PO Box 191580')).toBeVisible();
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),
 		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
-	expect(pdf.getPageCount()).toBeGreaterThanOrEqual(3);
+	expect(pdf.getPageCount()).toBe(3);
 });
 
 test('?demo fills the wizard so it clicks straight through', async ({ page }) => {

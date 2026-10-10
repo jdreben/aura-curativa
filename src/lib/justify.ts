@@ -92,7 +92,7 @@ export function letterParts(l: LetterInput): LetterParts {
 export type BenefitExplanation = { basis: string; paragraphs: string[] };
 
 // The "why you are entitled" page that goes with every claim; written for the insurer's reviewer.
-export function benefitExplanation(l: LetterInput & { benefit: string }): BenefitExplanation {
+export function benefitExplanation(l: LetterInput & { benefit: string; coverage?: string | null }): BenefitExplanation {
 	const service = l.serviceName.toLowerCase();
 	if (l.route === 'ambulance' && l.insurer === 'first-medical') {
 		return {
@@ -141,7 +141,7 @@ export function benefitExplanation(l: LetterInput & { benefit: string }): Benefi
 				'Póliza First Medical Directo 2027 (FMHP-PD-2027): sección "Reembolso de gastos cubiertos por servicios obtenidos fuera de la red" y sección "Ley Núm. 134-2020"; Artículo 48.050 del Código de Seguros de Salud de Puerto Rico.',
 			paragraphs: [
 				`${l.planName} es un plan de libre selección. La póliza dispone que First Medical reembolsará al suscriptor el 100% de los gastos cubiertos que sean médicamente necesarios, según las tarifas contratadas por su red International Medical Card para un proveedor de una especialidad similar, menos el copago que aplique.`,
-				`El servicio o suplido reclamado, ${service}, está cubierto por la póliza. Beneficio aplicable: ${l.benefit}.`,
+				`El servicio o suplido reclamado, ${service}, está cubierto por la póliza${l.coverage ? ` («${l.coverage}»)` : ''}. Beneficio aplicable: ${l.benefit}.`,
 				l.answers['sin-red']
 					? 'No hay un proveedor de esta especialidad en el directorio de First Medical. Conforme al inciso B del Artículo 48.050, procede el reembolso del 100% de los gastos incurridos, menos el copago que aplique.'
 					: 'El proveedor no participa en la red de First Medical. Procede el reembolso a la tarifa mayor contratada con un proveedor de la misma especialidad, menos el copago o coaseguro que aplique.',
@@ -212,13 +212,14 @@ export function packetSteps(s: StepsInput): string[] {
 	const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}` : xs[0]);
 	const sign = ts ? 'Firme y feche la sección D del formulario y firme la carta.' : 'Firme y feche la sección 4 del formulario y firme la carta.';
 	const send = (when: string) => `Envíe el formulario, la carta y ${list(attach)} ${when}. Guarde una copia de todo.`;
-	const fromProvider = ts
-		? 'su proveedor complete y firme la sección E y le dé un recibo original, timbrado y firmado'
-		: 'su proveedor le dé un recibo original con su NPI, el diagnóstico (ICD-10) y los códigos CPT';
+	const section = ts ? 'la sección E (Información sobre los servicios)' : 'la Sección 3 (Información del Proveedor)';
+	const receipt = ts
+		? 'También, pida que su proveedor le dé un recibo original, timbrado y firmado, con su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
+		: 'También, pida que su proveedor le dé un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado.';
 
 	if (s.delivery === 'before') {
 		return [
-			`Lleve este paquete a su cita. Pida que ${fromProvider}.`,
+			`Lleve este paquete a su cita o entrégueselo a su proveedor y pídale que complete y firme ${section} del formulario. ${receipt}`,
 			'Después del servicio, escriba la fecha y lo pagado en el formulario y en la carta.',
 			sign,
 			send(`dentro de ${deadlineWords(s.deadlineDays)} desde la fecha del servicio`)
@@ -227,19 +228,19 @@ export function packetSteps(s: StepsInput): string[] {
 	const by = `antes del ${s.deadline || 'plazo de su plan'}`;
 	if (s.delivery === 'email') {
 		return [
-			`Espere a que ${ts ? 'su proveedor le devuelva el formulario con la sección E completada y firmada, y le dé' : 'su proveedor le dé'} el recibo original.`,
+			`Espere a que su proveedor le devuelva el formulario con ${section} completada y firmada, y le dé el recibo original.`,
 			'Imprima el formulario y la carta.',
 			sign,
 			send(by)
 		];
 	}
-	return [`Lleve el paquete a su proveedor. Pida que ${fromProvider}.`, sign, send(by)];
+	return [`Lleve el paquete a su proveedor y pídale que complete y firme ${section} del formulario. ${receipt}`, sign, send(by)];
 }
 
 export function providerRequest(insurer: Insurer): string {
 	return insurer === 'triple-s'
 		? 'Por favor complete y firme la sección E (Información sobre los servicios) del formulario adjunto, y devuélvamelo junto con un recibo original, timbrado y firmado, que incluya su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
-		: 'Por favor envíeme un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado, para someter mi reembolso a First Medical.';
+		: 'Por favor complete la Sección 3 (Información del Proveedor) del formulario adjunto y envíeme un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado, para someter mi reembolso a First Medical.';
 }
 
 export type Link = { label: string; href: string };
@@ -266,5 +267,5 @@ export function linkFor(text: string, insurer: Insurer): Link | null {
 export function appointmentRequest(insurer: Insurer): string {
 	return insurer === 'triple-s'
 		? 'En su cita o comunicación con el proveedor, pídale que por favor complete y firme la sección E (Información sobre los servicios) del formulario adjunto, y que le dé un recibo original, timbrado y firmado, con su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
-		: 'En su cita o comunicación con el proveedor, pídale que por favor le dé un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado.';
+		: 'En su cita o comunicación con el proveedor, pídale que por favor complete la Sección 3 (Información del Proveedor) del formulario y le dé un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado.';
 }
