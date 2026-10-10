@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASE = process.env.BASE ?? 'https://18-212-154-202.sslip.io';
+const BASE = process.env.BASE ?? 'https://auracurativa.pages.dev';
 const OUT = join('demo-video', 'provider');
 const RAW = join(OUT, 'raw');
 rmSync(OUT, { recursive: true, force: true });

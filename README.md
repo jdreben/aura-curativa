@@ -4,7 +4,7 @@
 Curativa tells them whether their plan will pay them back, roughly how much, what would cost less, and
 exactly how to file the claim.
 
-**Live demo:** https://18-212-154-202.sslip.io (no account needed)
+**Live demo:** https://auracurativa.pages.dev (no account needed)
 
 ## Why
 
@@ -47,7 +47,7 @@ We read the 2027 policies and published estimates so patients don't have to:
    - **Finish:** *Terminar y volver al inicio* clears everything the patient typed from memory, shows a
      short "datos borrados" confirmation, and returns to the home page.
 
-An earlier prototype of a provider-side flow lives at [`/proveedor`](https://18-212-154-202.sslip.io/proveedor)
+An earlier prototype of a provider-side flow lives at [`/proveedor`](https://auracurativa.pages.dev/proveedor)
 (the provider prepares the claim and hands the patient a QR code). It is not part of the submitted
 product; a fuller provider flow is on the roadmap.
 
@@ -86,11 +86,14 @@ npm run test       # estimator, plan rules, payload, validators, PDF packets
 npm run check      # svelte-check
 npm run build      # static site in build/
 npm run e2e        # Playwright, desktop + phone: estimate → claim wizard → downloads → finish
-                   # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
+                   # BASE_URL=https://auracurativa.pages.dev npm run e2e  to test the live site
 npm run demo-video          # patient-flow video → demo-video/aura-curativa-patient.mp4 (ffmpeg, pdftoppm)
 npm run demo-video:provider # provider-flow video → demo-video/aura-curativa-provider.mp4
-scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 ```
+
+Hosting: Cloudflare Pages builds and deploys every push to `main` (build command `npm run build`,
+output `build/`, `NODE_VERSION=24`). `static/_headers` sets `Referrer-Policy: no-referrer`.
+`scripts/deploy.sh` is the older EC2 + Caddy path, kept until the old URL is retired.
 
 ## Where the rules live
 

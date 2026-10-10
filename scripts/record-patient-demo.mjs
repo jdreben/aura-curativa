@@ -4,7 +4,7 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { caption, endCard, glide, pick, press, showPdfPages, sleep, stitch, webm } from './demo-helpers.mjs';
 
-const BASE = process.env.BASE ?? 'https://18-212-154-202.sslip.io';
+const BASE = process.env.BASE ?? 'https://auracurativa.pages.dev';
 const OUT = join('demo-video', 'patient');
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
