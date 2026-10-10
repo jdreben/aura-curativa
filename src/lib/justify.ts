@@ -228,7 +228,9 @@ export function packetSteps(s: StepsInput): string[] {
 	const by = `antes del ${s.deadline || 'plazo de su plan'}`;
 	if (s.delivery === 'email') {
 		return [
-			`Espere a que su proveedor le devuelva el formulario con ${section} completada y firmada. ${receipt}`,
+			ts
+				? 'Espere a que su proveedor le devuelva el formulario con la sección E completada y firmada y el recibo timbrado y firmado, con su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado. Recibos de caja o facturas que solo digan "balance pendiente" no se aceptan.'
+				: 'Espere a que su proveedor le devuelva el formulario con la Sección 3 completada y el recibo con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado.',
 			'Imprima el formulario y la carta.',
 			sign,
 			send(by)
@@ -239,8 +241,8 @@ export function packetSteps(s: StepsInput): string[] {
 
 export function providerRequest(insurer: Insurer): string {
 	return insurer === 'triple-s'
-		? 'Por favor complete y firme la sección E (Información sobre los servicios) del formulario adjunto, y devuélvamelo junto con un recibo original, timbrado y firmado, que incluya su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
-		: 'Por favor complete la Sección 3 (Información del Proveedor) del formulario adjunto y envíeme un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado, para someter mi reembolso a First Medical.';
+		? 'Por favor complete y firme la sección E (Información sobre los servicios) del formulario adjunto, y devuélvamelo junto con un recibo timbrado y firmado que incluya su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
+		: 'Por favor complete la Sección 3 (Información del Proveedor) del formulario adjunto y envíeme un recibo con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado, para someter mi reembolso a First Medical.';
 }
 
 export type Link = { label: string; href: string };

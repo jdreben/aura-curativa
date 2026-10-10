@@ -20,8 +20,8 @@
 				<span class="inline-block h-5 w-5 rounded-full bg-gradient-to-br from-teal-400 to-violet-400 sm:h-8 sm:w-8"></span>
 				Aura Curativa
 			</a>
-			<nav class="flex gap-5 whitespace-nowrap text-xl font-semibold tracking-tight sm:gap-8 sm:text-3xl">
-				<a href={resolve('/')} class="text-teal-800 hover:underline">¿Me reembolsan?</a>
+			<nav class="flex gap-5 whitespace-nowrap text-base font-semibold sm:gap-8 sm:text-lg">
+				<a href={resolve('/')} class="text-teal-800 hover:underline">Inicio</a>
 				<a href={resolve('/comparar')} class="text-teal-800 hover:underline">Comparar planes</a>
 			</nav>
 		</div>

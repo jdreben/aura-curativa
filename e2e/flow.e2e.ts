@@ -138,21 +138,26 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	await expect(page.getByText('PO Box 363628')).toBeVisible();
 	await expect(page.getByText(/Envíelo por email a reembolso@ssspr\.com o por correo a:/)).toBeVisible();
 	await expect(page.getByText('app Mi Triple-S')).toHaveCount(0);
-	await page.getByRole('textbox', { name: 'Email del proveedor' }).fill('dra.rivera@example.com');
-	await page.getByRole('textbox', { name: 'Su email' }).fill('carmen@example.com');
+	await expect(page.getByRole('textbox', { name: 'Email del proveedor' })).toHaveCount(0);
 	await expect(page.getByRole('textbox', { name: 'Mensaje' })).toHaveValue(/complete y firme la sección E/);
+	await expect(page.getByRole('textbox', { name: 'Mensaje' })).not.toHaveValue(/recibo original/);
+	await expect(page.getByText(/Espere a que su proveedor le devuelva el formulario con la sección E completada y firmada y el recibo timbrado/)).toBeVisible();
 	const href = (await page.getByRole('link', { name: 'Abrir en mi email' }).getAttribute('href')) ?? '';
-	expect(href).toMatch(/^mailto:dra\.rivera%40example\.com\?cc=carmen%40example\.com/);
+	expect(href).toMatch(/^mailto:\?subject=/);
 	expect(decodeURIComponent(href)).toContain('Saludos:');
 	await shot(page, 'w3-send');
 
-	await expect(page.getByRole('link', { name: 'Descargar mis próximos pasos (PDF)' })).toHaveCount(0);
-	await page.getByRole('button', { name: 'Ya se lo envié' }).click();
-	const [stepsDownload] = await Promise.all([
+	const [providerDownload] = await Promise.all([
 		page.waitForEvent('download'),
-		page.getByRole('link', { name: 'Descargar mis próximos pasos (PDF)' }).click()
+		page.getByRole('link', { name: 'Descargar el formulario para su proveedor' }).click()
 	]);
-	expect((await PDFDocument.load(readFileSync((await stepsDownload.path()) ?? ''))).getPageCount()).toBe(1);
+	expect((await PDFDocument.load(readFileSync((await providerDownload.path()) ?? ''))).getPageCount()).toBe(3);
+	await expect(page.getByText('Listo. Guarde sus próximos pasos:')).toHaveCount(0);
+	const [packetDownload] = await Promise.all([
+		page.waitForEvent('download'),
+		page.getByRole('link', { name: 'Descargar el paquete completo (PDF)' }).click()
+	]);
+	expect((await PDFDocument.load(readFileSync((await packetDownload.path()) ?? ''))).getPageCount()).toBe(4);
 
 	await page.getByRole('button', { name: '← Paso anterior' }).click();
 	await page.getByRole('button', { name: /Imprimirlo y llevárselo/ }).click();
@@ -212,7 +217,7 @@ test('?demo fills the wizard so it clicks straight through', async ({ page }) =>
 	await expect(page.getByText('FM0012345678')).toBeVisible();
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
 	await page.getByRole('button', { name: /Enviárselo por email/ }).click();
-	await expect(page.getByRole('textbox', { name: 'Email del proveedor' })).toHaveValue('proveedor@example.com');
+	await expect(page.getByRole('link', { name: 'Descargar el formulario para su proveedor' })).toBeVisible();
 });
 
 test('other insurance and accident open the fields each form asks for', async ({ page }) => {

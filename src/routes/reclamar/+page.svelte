@@ -16,7 +16,7 @@
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
 	import { benefitExplanation, letterParts, packetSteps, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
 	import type { Delivery } from '#lib/justify.ts';
-	import { buildPatientPacket, buildStepsPdf } from '#lib/pdf/patient-packet.ts';
+	import { buildPatientPacket } from '#lib/pdf/patient-packet.ts';
 	import type { PatientPacketInput } from '#lib/pdf/patient-packet.ts';
 	import { isoToForm } from '#lib/pdf/triple-s.ts';
 
@@ -51,16 +51,13 @@
 	let accident = $state(emptyAccident());
 	let editing = $state(false);
 	let attempted = $state(false);
-	let myEmail = $state('');
-	let providerEmail = $state('');
 	let copied = $state(false);
 	let delivery = $state<'print' | 'email' | null>(null);
-	let sent = $state(false);
 	let pdf = $state<
 		| { status: 'idle' }
 		| { status: 'loading' }
 		| { status: 'error'; message: string }
-		| { status: 'ready'; url: string; blob: Blob; providerUrl: string; providerBlob: Blob; stepsUrl: string }
+		| { status: 'ready'; url: string; providerUrl: string; emailPacketUrl: string }
 	>({ status: 'idle' });
 
 	const flow = $derived<Step[]>(
@@ -117,20 +114,13 @@
 	);
 	const emailSubject = $derived(`Solicitud de reembolso – ${patientFullName(patient)}`);
 	const mailto = $derived(
-		`mailto:${encodeURIComponent(providerEmail)}?${new URLSearchParams({
-			...(myEmail ? { cc: myEmail } : {}),
+		`mailto:?${new URLSearchParams({
 			subject: emailSubject,
 			body: `${emailBody}\n\n(Adjunte el PDF que descargó de Aura Curativa.)`
 		})
 			.toString()
 			.replace(/\+/g, '%20')}`
 	);
-	const canShareFiles = $derived(
-		pdf.status === 'ready' &&
-			typeof navigator !== 'undefined' &&
-			!!navigator.canShare?.({ files: [new File([pdf.blob], 'reembolso.pdf', { type: 'application/pdf' })] })
-	);
-
 	function next() {
 		attempted = true;
 		if (step === 'details' && detailProblems.length) return;
@@ -183,7 +173,6 @@
 
 	function pick(d: 'print' | 'email') {
 		delivery = d;
-		sent = false;
 		go(d);
 	}
 
@@ -200,7 +189,7 @@
 
 	const revoke = () => {
 		if (pdf.status !== 'ready') return;
-		for (const u of [pdf.url, pdf.providerUrl, pdf.stepsUrl]) URL.revokeObjectURL(u);
+		for (const u of [pdf.url, pdf.providerUrl, pdf.emailPacketUrl]) URL.revokeObjectURL(u);
 	};
 
 	// Synthetic data so a demo can click straight through every step; ?demo fills it on load.
@@ -209,8 +198,6 @@
 		paid = route === 'vision' ? '180' : '90';
 		answers = Object.fromEntries(questions.map((q) => [q.id, true]));
 		patient = { ...demo, contractNumber: insurer === 'triple-s' ? demo.contractNumber : 'FM0012345678' };
-		myEmail = 'paciente@example.com';
-		providerEmail = 'proveedor@example.com';
 		attempted = false;
 	}
 
@@ -263,34 +250,18 @@
 				accident: isAccident ? $state.snapshot(accident) : null
 			};
 			const asPdf = (b: Uint8Array) => new Blob([b as BlobPart], { type: 'application/pdf' });
-			// The provider gets the form and letter only; the patient keeps the steps as their own PDF.
+			// The provider gets the form and letter only; the patient keeps the full packet with the steps.
 			const blob = asPdf(await buildPatientPacket(template, input));
 			const providerBlob = asPdf(await buildPatientPacket(template, input, { cover: false }));
-			const stepsBlob = asPdf(await buildStepsPdf({ ...input, steps: stepsFor('email') }));
+			const emailPacketBlob = asPdf(await buildPatientPacket(template, { ...input, steps: stepsFor('email') }));
 			pdf = {
 				status: 'ready',
 				url: URL.createObjectURL(blob),
-				blob,
 				providerUrl: URL.createObjectURL(providerBlob),
-				providerBlob,
-				stepsUrl: URL.createObjectURL(stepsBlob)
+				emailPacketUrl: URL.createObjectURL(emailPacketBlob)
 			};
 		} catch (e) {
 			pdf = { status: 'error', message: e instanceof Error ? e.message : String(e) };
-		}
-	}
-
-	async function share() {
-		if (pdf.status !== 'ready') return;
-		try {
-			await navigator.share({
-				title: emailSubject,
-				text: emailBody,
-				files: [new File([pdf.providerBlob], 'reembolso.pdf', { type: 'application/pdf' })]
-			});
-			sent = true;
-		} catch {
-			// User cancelled the share sheet.
 		}
 	}
 
@@ -543,49 +514,24 @@
 			{:else if step === 'email'}
 				<h2 class="text-lg font-semibold text-slate-900">Envíele el PDF a su proveedor</h2>
 				<p class="mt-1 text-sm text-slate-600">Su proveedor recibe el formulario y la carta. Sus próximos pasos se quedan con usted.</p>
-				<div class="mt-4 grid gap-4 sm:grid-cols-2">
-					<Field label="Su email" type="email" bind:value={myEmail} autocomplete="email" />
-					<Field label="Email del proveedor" type="email" bind:value={providerEmail} />
-				</div>
 				<label class="mt-4 block">
 					<span class="text-sm font-medium text-slate-700">Mensaje</span>
 					<textarea readonly rows="9" class="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 text-sm">{emailBody}</textarea>
 				</label>
 				<div class="mt-4 flex flex-col gap-2 sm:flex-row">
-					{#if canShareFiles}
-						<button type="button" class={primary} onclick={share}>Enviar con el PDF</button>
-					{/if}
 					{#if pdf.status === 'ready'}
-						<a
-							href={mailto}
-							onclick={() => {
-								if (pdf.status !== 'ready') return;
-								const a = document.createElement('a');
-								a.href = pdf.providerUrl;
-								a.download = 'reembolso.pdf';
-								a.click();
-								sent = true;
-							}}
-							class="{canShareFiles ? secondary : primary} text-center"
-						>
-							Abrir en mi email
-						</a>
+						<a href={pdf.providerUrl} download="reembolso-para-su-proveedor.pdf" class="{primary} text-center">Descargar el formulario para su proveedor</a>
+						<a href={mailto} class="{secondary} text-center">Abrir en mi email</a>
 					{/if}
 					<button type="button" class={secondary} onclick={copyMessage}>{copied ? '¡Copiado!' : 'Copiar mensaje'}</button>
 				</div>
 				<p class="mt-2 text-xs text-slate-500">
-					El email sale de su propia cuenta. Aura Curativa no envía ni guarda nada.
-					{canShareFiles ? '' : 'Al abrir su email descargamos el PDF para que lo adjunte.'}
+					Adjunte el formulario al email. El email sale de su propia cuenta. Aura Curativa no envía ni guarda nada.
 				</p>
 				{@render nextSteps(stepsFor('email'))}
-				<div class="mt-4">
-					{#if sent && pdf.status === 'ready'}
-						<p class="text-sm font-semibold text-teal-900">Listo. Guarde sus próximos pasos:</p>
-						<a href={pdf.stepsUrl} download="proximos-pasos.pdf" class="mt-2 inline-block {primary}">Descargar mis próximos pasos (PDF)</a>
-					{:else}
-						<button type="button" class="text-sm font-medium text-teal-700 hover:underline" onclick={() => (sent = true)}>Ya se lo envié</button>
-					{/if}
-				</div>
+				{#if pdf.status === 'ready'}
+					<a href={pdf.emailPacketUrl} download="reembolso-completo.pdf" class="mt-4 inline-block {primary}">Descargar el paquete completo (PDF)</a>
+				{/if}
 			{:else if step === 'send'}
 				<h2 class="text-lg font-semibold text-slate-900">Llévelo a su cita o entrégueselo al proveedor</h2>
 				{#if pdf.status === 'ready'}

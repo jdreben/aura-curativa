@@ -83,9 +83,8 @@ await p.getByText('Revise su formulario').waitFor();
 await caption(p, 'Review it. Anything wrong? Fix it and it refills.');
 await sleep(3500);
 await press(p.getByRole('button', { name: 'Sí, todo correcto' }));
+await press(p.getByRole('button', { name: /Enviárselo por email/ }));
 await caption(p, 'A prefilled email asks the provider to complete and sign their part.');
-await fill('Su email', 'carmen@example.com');
-await fill('Email del proveedor', 'dra.rivera@example.com');
 await glide(p, 250, 1000);
 await sleep(2500);
 await caption(p, 'Sent from the patient’s own email. Nothing is stored.');
@@ -93,7 +92,7 @@ const [download] = await Promise.all([
 	p.waitForEvent('download', { timeout: 30000 }),
 	(async () => {
 		await sleep(1500);
-		await press(p.getByRole('link', { name: 'Descargar para imprimir' }));
+		await press(p.getByRole('link', { name: 'Descargar el paquete completo (PDF)' }));
 	})()
 ]);
 const pdfPath = join(OUT, 'form.pdf');
