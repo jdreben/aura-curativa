@@ -68,4 +68,4 @@ lattis, claude, svelte, sveltekit, typescript, tailwindcss, pdf-lib, qrcode, vit
 ## Try it out
 
 - Live demo: https://auracurativa.pages.dev
-- Code: https://github.com/jdreben/healing-aura
+- Code: https://github.com/jdreben/aura-curativa
