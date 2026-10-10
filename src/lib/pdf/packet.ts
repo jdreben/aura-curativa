@@ -46,7 +46,7 @@ function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit, o
 	const route = routeById(visit.route);
 	const plan = planById(patient.plan);
 	let y = 730;
-	text(page, 'Healing Aura', 50, y, f.bold, 22);
+	text(page, 'Aura Curativa', 50, y, f.bold, 22);
 	y -= 22;
 	text(page, 'Paquete de reembolso — Triple-S Salud', 50, y, f.regular, 13, GRAY);
 	y -= 34;
@@ -108,7 +108,7 @@ function drawCover(doc: PDFDocument, f: Fonts, patient: Patient, visit: Visit, o
 
 	text(
 		page,
-		'Generado en su dispositivo por Healing Aura. Ningún dato se guardó en un servidor. No es asesoría legal ni de seguros.',
+		'Generado en su dispositivo por Aura Curativa. Ningún dato se guardó en un servidor. No es asesoría legal ni de seguros.',
 		50,
 		60,
 		f.regular,
@@ -209,7 +209,7 @@ export async function buildTripleSPacket(
 ): Promise<Uint8Array> {
 	const out = await PDFDocument.create();
 	out.setTitle('Solicitud de reembolso Triple-S');
-	out.setProducer('Healing Aura');
+	out.setProducer('Aura Curativa');
 	const fonts: Fonts = {
 		regular: await out.embedFont(StandardFonts.Helvetica),
 		bold: await out.embedFont(StandardFonts.HelveticaBold)

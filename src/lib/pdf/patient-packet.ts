@@ -59,7 +59,7 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	const page = doc.addPage([612, 792]);
 	const insurerName = i.insurer === 'triple-s' ? TRIPLE_S.name : FIRST_MEDICAL.name;
 	let y = 730;
-	page.drawText('Healing Aura', { x: 50, y, size: 22, font: f.bold });
+	page.drawText('Aura Curativa', { x: 50, y, size: 22, font: f.bold });
 	y -= 22;
 	page.drawText(winAnsi(`Paquete de reembolso — ${insurerName}`), { x: 50, y, size: 13, font: f.regular, color: GRAY });
 	y -= 34;
@@ -102,7 +102,7 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 		480
 	);
 	page.drawText(
-		winAnsi('Generado en su dispositivo por Healing Aura. Ningún dato se guardó en un servidor. No es asesoría legal ni de seguros.'),
+		winAnsi('Generado en su dispositivo por Aura Curativa. Ningún dato se guardó en un servidor. No es asesoría legal ni de seguros.'),
 		{ x: 50, y: 48, size: 8.5, font: f.regular, color: GRAY }
 	);
 }
@@ -191,7 +191,7 @@ export async function buildPatientPacket(
 ): Promise<Uint8Array> {
 	const out = await PDFDocument.create();
 	out.setTitle('Solicitud de reembolso');
-	out.setProducer('Healing Aura');
+	out.setProducer('Aura Curativa');
 	const fonts: Fonts = {
 		regular: await out.embedFont(StandardFonts.Helvetica),
 		bold: await out.embedFont(StandardFonts.HelveticaBold)
@@ -238,7 +238,7 @@ export async function buildPatientPacket(
 export async function buildStepsPdf(i: PatientPacketInput): Promise<Uint8Array> {
 	const out = await PDFDocument.create();
 	out.setTitle('Próximos pasos');
-	out.setProducer('Healing Aura');
+	out.setProducer('Aura Curativa');
 	drawCover(out, { regular: await out.embedFont(StandardFonts.Helvetica), bold: await out.embedFont(StandardFonts.HelveticaBold) }, i);
 	return out.save();
 }
