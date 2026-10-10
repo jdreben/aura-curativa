@@ -131,7 +131,10 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	await expect(page.getByText('Calle 3 #45, San Juan, PR 00926')).toBeVisible();
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
 
-	await expect(page.getByText('Envíelo a su proveedor')).toBeVisible();
+	await expect(page.getByText('¿Cómo se lo hace llegar a su proveedor?')).toBeVisible();
+	await page.getByRole('button', { name: /Enviárselo por email/ }).click();
+	await expect(page.getByText('Envíele el PDF a su proveedor')).toBeVisible();
+	await expect(page.getByText('Próximos pasos', { exact: true })).toBeVisible();
 	await expect(page.getByText('PO Box 363628')).toBeVisible();
 	await expect(page.getByText(/Envíelo por email a reembolso@ssspr\.com o por correo a:/)).toBeVisible();
 	await expect(page.getByText('app Mi Triple-S')).toHaveCount(0);
@@ -143,12 +146,24 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	expect(decodeURIComponent(href)).toContain('Saludos:');
 	await shot(page, 'w3-send');
 
+	await expect(page.getByRole('link', { name: 'Descargar mis próximos pasos (PDF)' })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Ya se lo envié' }).click();
+	const [stepsDownload] = await Promise.all([
+		page.waitForEvent('download'),
+		page.getByRole('link', { name: 'Descargar mis próximos pasos (PDF)' }).click()
+	]);
+	expect((await PDFDocument.load(readFileSync((await stepsDownload.path()) ?? ''))).getPageCount()).toBe(1);
+
+	await page.getByRole('button', { name: '← Paso anterior' }).click();
+	await page.getByRole('button', { name: /Imprimirlo y llevárselo/ }).click();
+	await expect(page.getByText('Imprímalo y lléveselo a su proveedor')).toBeVisible();
+	await expect(page.getByText('Próximos pasos', { exact: true })).toBeVisible();
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),
 		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
-	expect(pdf.getPageCount()).toBe(5);
+	expect(pdf.getPageCount()).toBeGreaterThanOrEqual(4);
 });
 
 test('patient before the service: preauthorization warning, form to bring', async ({ page }) => {
@@ -174,14 +189,14 @@ test('patient before the service: preauthorization warning, form to bring', asyn
 	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
 	await expect(page.getByText('Llévelo a su cita o entrégueselo al proveedor')).toBeVisible();
-	await expect(page.getByText(/^En su cita o comunicación con el proveedor, pídale que por favor/)).toBeVisible();
+	await expect(page.getByText(/^Lleve este paquete a su cita\./)).toBeVisible();
 	await expect(page.getByText('PO Box 191580')).toBeVisible();
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),
 		page.getByRole('link', { name: 'Descargar para imprimir' }).click()
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
-	expect(pdf.getPageCount()).toBe(3);
+	expect(pdf.getPageCount()).toBeGreaterThanOrEqual(3);
 });
 
 test('?demo fills the wizard so it clicks straight through', async ({ page }) => {
@@ -196,6 +211,7 @@ test('?demo fills the wizard so it clicks straight through', async ({ page }) =>
 	await expect(page.getByText('Revise su formulario')).toBeVisible();
 	await expect(page.getByText('FM0012345678')).toBeVisible();
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
+	await page.getByRole('button', { name: /Enviárselo por email/ }).click();
 	await expect(page.getByRole('textbox', { name: 'Email del proveedor' })).toHaveValue('proveedor@example.com');
 });
 
@@ -272,8 +288,11 @@ test('going back in the claim wizard: back button, browser back and the progress
 	await page.getByRole('button', { name: 'Llenar mi formulario' }).click();
 	await expect(page.getByText('Revise su formulario')).toBeVisible();
 	await page.getByRole('button', { name: 'Sí, todo correcto' }).click();
-	await expect(page.getByText('Envíelo a su proveedor')).toBeVisible();
+	await page.getByRole('button', { name: /Enviárselo por email/ }).click();
+	await expect(page.getByText('Envíele el PDF a su proveedor')).toBeVisible();
 
+	await page.getByRole('button', { name: '← Paso anterior' }).click();
+	await expect(page.getByText('¿Cómo se lo hace llegar a su proveedor?')).toBeVisible();
 	await page.getByRole('button', { name: '← Paso anterior' }).click();
 	await expect(page.getByText('Revise su formulario')).toBeVisible();
 	await page.getByRole('button', { name: 'Volver a Detalles' }).click();

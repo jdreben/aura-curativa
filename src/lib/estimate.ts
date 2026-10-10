@@ -108,6 +108,18 @@ export function inNetworkCost(plan: PatientPlanId, service: ServiceId): string |
 	return IN_NETWORK[plan as IndividualPlan]?.[service] ?? null;
 }
 
+// Usual billing codes, so the patient can ask the plan for a quote; the provider's receipt has the exact one.
+const CPT_HINT: Partial<Record<ServiceId, string>> = {
+	pcp: '99213 o 99214 (visita de paciente establecido)',
+	especialista: '99213 o 99214 (visita de paciente establecido)',
+	subespecialista: '99213 o 99214 (visita de paciente establecido)',
+	'salud-mental': '90834 (psicoterapia de 45 minutos) o 90837 (60 minutos)',
+	nutricionista: '97802 (evaluación inicial) o 97803 (seguimiento)',
+	fertilidad: '99203 o 99213 (consulta)',
+	'terapia-fisica': '97110 (ejercicio terapéutico)',
+	quiropractico: '98940 (manipulación de 1 o 2 regiones)'
+};
+
 export type Insurer = 'triple-s' | 'first-medical';
 
 export type ClaimRules = {
@@ -373,7 +385,7 @@ function estimateFor(plan: PatientPlanId, service: ServiceId, paid: number): Omi
 			owe: null,
 			explanation: [
 				`Su plan es de libre selección. Le reembolsa la tarifa más alta que First Medical paga en su red a un proveedor de la misma especialidad, menos su ${cost ? `copago o coaseguro (${cost})` : 'copago o coaseguro'}. Si el proveedor cobró más, usted paga la diferencia.`,
-				'La tarifa contratada (lo que First Medical le paga a sus proveedores) no aparece en la póliza ni en el folleto: las tarifas del folleto son la prima mensual del plan. Llame al 1-888-318-0274 (7 días, 8am–12am) con el código del servicio (CPT): por ley le tienen que decir cuánto le reembolsan.',
+				`First Medical no publica sus tarifas. Llame al 1-888-318-0274 (7 días, 8am–12am) con el código del servicio (CPT)${CPT_HINT[service] ? `, que suele ser ${CPT_HINT[service]}` : ''}: por ley le tienen que dar el estimado.`,
 				'Si ninguna especialidad igual está en la red, le reembolsan el 100% de lo pagado menos su copago.',
 				...(service === 'radiologia'
 					? [`El ${cost} es para rayos X. MRI, CT, sonogramas y otras pruebas especializadas tienen ${FM_SPECIALIZED[plan as FirstMedicalPlan]} de coaseguro y la mayoría requiere autorización previa.`]

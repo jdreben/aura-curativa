@@ -3,7 +3,7 @@ import type { PDFFont, PDFPage } from 'pdf-lib';
 import type { Accident, Patient } from '../claim.ts';
 import { emptyProvider, emptyVisit, patientFullName } from '../claim.ts';
 import type { Insurer, ServiceId } from '../estimate.ts';
-import type { BenefitExplanation } from '../justify.ts';
+import type { BenefitExplanation, LetterParts } from '../justify.ts';
 import { CLAIM_RULES, deadlineWords } from '../estimate.ts';
 import type { RouteId } from '../plans.ts';
 import { fillFirstMedical, FIRST_MEDICAL } from './first-medical.ts';
@@ -22,7 +22,7 @@ export type PatientPacketInput = {
 	expected: string;
 	deadline: string;
 	steps: string[];
-	letter: string[];
+	letter: LetterParts;
 	explanation: BenefitExplanation;
 	accident: Accident | null;
 };
@@ -73,7 +73,7 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 		y = paragraph(page, v, 180, y, f.regular, 10.5, 370) - 4;
 	}
 	y -= 14;
-	page.drawText('Pasos', { x: 50, y, size: 12, font: f.bold });
+	page.drawText(winAnsi('Próximos pasos'), { x: 50, y, size: 12, font: f.bold });
 	y -= 20;
 	i.steps.forEach((s, n) => {
 		page.drawRectangle({ x: 52, y: y - 2, width: 9, height: 9, borderColor: BLACK, borderWidth: 0.75 });
@@ -105,87 +105,79 @@ function drawCover(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
 	);
 }
 
-function drawExplanation(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
-	const page = doc.addPage([612, 792]);
-	const insurerName = i.insurer === 'triple-s' ? TRIPLE_S.name : FIRST_MEDICAL.name;
-	let y = 730;
-	y = paragraph(page, 'Explicación de Beneficios para todos los servicios o suplidos reclamados', 50, y, f.bold, 15, 512) - 8;
-	const rows: [string, string][] = [
-		['Asegurado', patientFullName(i.patient)],
-		['Contrato', i.patient.contractNumber.toUpperCase()],
-		['Plan', `${i.planName} (${insurerName})`]
-	];
-	for (const [k, v] of rows) {
-		page.drawText(winAnsi(k), { x: 50, y, size: 10.5, font: f.regular, color: GRAY });
-		y = paragraph(page, v, 160, y, f.regular, 10.5, 400) - 4;
-	}
-	y -= 14;
-	page.drawText(winAnsi('Servicios o suplidos reclamados'), { x: 50, y, size: 12, font: f.bold });
-	y -= 20;
-	const cols = [50, 130, 490];
-	['Fecha', 'Servicio o suplido', 'Pagado'].forEach((h, n) =>
-		page.drawText(h, { x: cols[n], y, size: 9.5, font: f.bold, color: GRAY })
-	);
-	y -= 6;
-	page.drawLine({ start: { x: 50, y }, end: { x: 562, y }, thickness: 0.5, color: GRAY });
-	y -= 14;
-	const pending = 'Pendiente';
-	const cells = [
-		i.received && i.date ? isoToForm(i.date) : pending,
-		i.serviceName,
-		i.received && i.paid ? `$${i.paid}` : pending
-	];
-	const bottoms = cells.map((c, n) => paragraph(page, c, cols[n], y, f.regular, 10, n === 1 ? 340 : 70));
-	y = Math.min(...bottoms) - 4;
-	page.drawLine({ start: { x: 50, y: y + 8 }, end: { x: 562, y: y + 8 }, thickness: 0.5, color: GRAY });
-	y -= 14;
-	page.drawText(winAnsi('Reembolso solicitado'), { x: 50, y, size: 10.5, font: f.regular, color: GRAY });
-	y = paragraph(page, i.expected, 160, y, f.regular, 10.5, 400) - 18;
-	page.drawText(winAnsi('Base en la póliza'), { x: 50, y, size: 12, font: f.bold });
-	y -= 18;
-	y = paragraph(page, i.explanation.basis, 50, y, f.regular, 10.5, 512) - 16;
-	page.drawText(winAnsi('Por qué procede el reembolso'), { x: 50, y, size: 12, font: f.bold });
-	y -= 18;
-	for (const para of i.explanation.paragraphs) y = paragraph(page, para, 50, y, f.regular, 10.5, 512) - 8;
-	page.drawText(
-		winAnsi('Preparado por el asegurado con Healing Aura a partir de la póliza 2027. No es una determinación de la aseguradora.'),
-		{ x: 50, y: 48, size: 8.5, font: f.regular, color: GRAY }
-	);
-}
-
+// The request letter carries the benefit explanation, so the insurer reviews one document; it can run past a page.
 function drawLetter(doc: PDFDocument, f: Fonts, i: PatientPacketInput) {
-	const page = doc.addPage([612, 792]);
 	const p = i.patient;
+	const left = 72;
+	const width = 468;
+	let page = doc.addPage([612, 792]);
+	let y = 740;
+	const room = (h: number) => {
+		if (y - h < 60) {
+			page = doc.addPage([612, 792]);
+			y = 740;
+		}
+	};
+	const line = (text: string, size = 10.5, font = f.regular, color = BLACK) => {
+		room(size * 1.35);
+		page.drawText(winAnsi(text), { x: left, y, size, font, color });
+		y -= size * 1.35;
+	};
+	const para = (text: string, size = 10.5, font = f.regular) => {
+		for (const l of wrap(text, font, size, width)) line(l, size, font);
+		y -= 6;
+	};
+
 	const today = new Date();
 	const date = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
-	let y = 720;
-	for (const l of [patientFullName(p), p.address1, `${p.city}, ${p.state} ${p.zip}`, p.phone].filter((s) => s.trim())) {
-		page.drawText(winAnsi(l), { x: 72, y, size: 11, font: f.regular });
-		y -= 15;
-	}
-	y -= 15;
-	page.drawText(date, { x: 72, y, size: 11, font: f.regular });
-	y -= 30;
-	const to = CLAIM_RULES[i.insurer].address;
-	for (const l of to) {
-		page.drawText(winAnsi(l), { x: 72, y, size: 11, font: f.regular });
-		y -= 15;
-	}
-	y -= 15;
-	page.drawText(winAnsi(`Asunto: Solicitud de reembolso — Contrato ${p.contractNumber.toUpperCase()}`), { x: 72, y, size: 11, font: f.bold });
-	y -= 30;
-	page.drawText('Saludos:', { x: 72, y, size: 11, font: f.regular });
-	y -= 24;
-	for (const para of i.letter) y = paragraph(page, para, 72, y, f.regular, 11, 468) - 10;
-	y -= 30;
-	page.drawText('Atentamente,', { x: 72, y, size: 11, font: f.regular });
-	y -= 50;
-	page.drawLine({ start: { x: 72, y }, end: { x: 300, y }, thickness: 0.75, color: BLACK });
+	for (const l of [patientFullName(p), p.address1, `${p.city}, ${p.state} ${p.zip}`, p.phone].filter((s) => s.trim())) line(l);
+	y -= 8;
+	line(date);
+	y -= 10;
+	for (const l of CLAIM_RULES[i.insurer].address) line(l);
+	y -= 8;
+	para(`Asunto: Solicitud de reembolso — Contrato ${p.contractNumber.toUpperCase()}`, 10.5, f.bold);
+	y -= 4;
+	line('Saludos:');
+	y -= 8;
+	para(i.letter.request);
+
+	y -= 6;
+	para('Explicación de Beneficios para todos los servicios o suplidos reclamados', 11.5, f.bold);
+	const cols = [left, left + 80, left + 400];
+	room(40);
+	['Fecha', 'Servicio o suplido', 'Pagado'].forEach((h, n) => page.drawText(h, { x: cols[n], y, size: 9.5, font: f.bold, color: GRAY }));
+	y -= 6;
+	page.drawLine({ start: { x: left, y }, end: { x: left + width, y }, thickness: 0.5, color: GRAY });
 	y -= 14;
-	page.drawText(winAnsi(patientFullName(p)), { x: 72, y, size: 11, font: f.regular });
+	const pending = 'Pendiente';
+	const cells = [i.received && i.date ? isoToForm(i.date) : pending, i.serviceName, i.received && i.paid ? `$${i.paid}` : pending];
+	const bottoms = cells.map((c, n) => paragraph(page, c, cols[n], y, f.regular, 10, n === 1 ? 310 : 68));
+	y = Math.min(...bottoms) - 2;
+	page.drawLine({ start: { x: left, y: y + 8 }, end: { x: left + width, y: y + 8 }, thickness: 0.5, color: GRAY });
+	y -= 10;
+	para(`Reembolso solicitado: ${i.expected}`);
+	para(`Base en la póliza: ${i.explanation.basis}`);
+	for (const t of i.explanation.paragraphs) para(t);
+
+	y -= 4;
+	para(i.letter.closing);
+	room(70);
+	y -= 4;
+	line('Atentamente,');
+	y -= 30;
+	page.drawLine({ start: { x: left, y }, end: { x: 300, y }, thickness: 0.75, color: BLACK });
+	y -= 14;
+	line(patientFullName(p));
 }
 
-export async function buildPatientPacket(template: Uint8Array, i: PatientPacketInput): Promise<Uint8Array> {
+export type PacketParts = { cover: boolean };
+
+export async function buildPatientPacket(
+	template: Uint8Array,
+	i: PatientPacketInput,
+	parts: PacketParts = { cover: true }
+): Promise<Uint8Array> {
 	const out = await PDFDocument.create();
 	out.setTitle('Solicitud de reembolso');
 	out.setProducer('Healing Aura');
@@ -193,7 +185,7 @@ export async function buildPatientPacket(template: Uint8Array, i: PatientPacketI
 		regular: await out.embedFont(StandardFonts.Helvetica),
 		bold: await out.embedFont(StandardFonts.HelveticaBold)
 	};
-	drawCover(out, fonts, i);
+	if (parts.cover) drawCover(out, fonts, i);
 
 	// The service comes from the patient's selection; the provider's fields stay blank for the provider.
 	const lines = [{ date: i.received ? i.date : '', description: i.serviceName, paid: i.received ? i.paid : '' }];
@@ -227,8 +219,16 @@ export async function buildPatientPacket(template: Uint8Array, i: PatientPacketI
 					lines
 				});
 	for (const pg of await out.copyPages(form, form.getPageIndices())) out.addPage(pg);
-	drawExplanation(out, fonts, i);
-	if (i.received) drawLetter(out, fonts, i);
+	drawLetter(out, fonts, i);
+	return out.save();
+}
+
+// The "Pasos" page on its own, for patients who emailed the packet to their provider.
+export async function buildStepsPdf(i: PatientPacketInput): Promise<Uint8Array> {
+	const out = await PDFDocument.create();
+	out.setTitle('Próximos pasos');
+	out.setProducer('Healing Aura');
+	drawCover(out, { regular: await out.embedFont(StandardFonts.Helvetica), bold: await out.embedFont(StandardFonts.HelveticaBold) }, i);
 	return out.save();
 }
 

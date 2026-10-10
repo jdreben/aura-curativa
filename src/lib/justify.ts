@@ -47,54 +47,46 @@ export type LetterInput = {
 	answers: Record<string, boolean>;
 };
 
-export function letterParagraphs(l: LetterInput): string[] {
+export type LetterParts = { request: string; closing: string };
+
+// The request opens the letter and the closing lists attachments; the benefit explanation goes between them.
+export function letterParts(l: LetterInput): LetterParts {
 	const what = `${l.serviceName.toLowerCase()}${l.date ? ` el ${l.date}` : ''}${l.paid ? `, por lo cual pagué $${l.paid}` : ''}`;
 	const closing =
 		'Adjunto el formulario de reembolso y el recibo original del proveedor con el diagnóstico (ICD-10), el código de cada servicio y su NPI.';
 
 	if (l.route === 'ambulance') {
-		return [
-			`Solicito el reembolso del beneficio de ambulancia terrestre de mi póliza ${l.planName} (hasta $80 por ${l.insurer === 'triple-s' ? 'caso' : 'viaje'}) por ${what}.`,
-			'Adjunto el formulario de reembolso, el recibo original de la compañía de ambulancias y el informe médico con el diagnóstico, la razón del traslado y la distancia recorrida.'
-		];
+		return {
+			request: `Solicito el reembolso del beneficio de ambulancia terrestre de mi póliza ${l.planName} (hasta $80 por ${l.insurer === 'triple-s' ? 'caso' : 'viaje'}) por ${what}.`,
+			closing:
+				'Adjunto el formulario de reembolso, el recibo original de la compañía de ambulancias y el informe médico con el diagnóstico, la razón del traslado y la distancia recorrida.'
+		};
 	}
 	if (l.route === 'cannabis') {
-		return [
-			`Solicito el reembolso del beneficio de cannabis medicinal de mi póliza ${l.planName} (hasta $350 por año contrato) por ${what}, comprado en un dispensario de First Medical Cannabis.`,
-			'Adjunto el formulario de reembolso, el recibo original del dispensario y copia de mi licencia vigente de paciente de cannabis medicinal.'
-		];
+		return {
+			request: `Solicito el reembolso del beneficio de cannabis medicinal de mi póliza ${l.planName} (hasta $350 por año contrato) por ${what}, comprado en un dispensario de First Medical Cannabis.`,
+			closing: 'Adjunto el formulario de reembolso, el recibo original del dispensario y copia de mi licencia vigente de paciente de cannabis medicinal.'
+		};
 	}
 	if (l.route === 'mi-momento') {
-		return [`Solicito el reembolso del beneficio Mi Momento de mi póliza ${l.planName} ($200, una sola vez) por ${what}.`, closing];
+		return { request: `Solicito el reembolso del beneficio Mi Momento de mi póliza ${l.planName} ($200, una sola vez) por ${what}.`, closing };
 	}
 	if (l.insurer === 'first-medical') {
-		return [
-			`Solicito el reembolso de gastos cubiertos por servicios obtenidos fuera de la red, conforme a la sección "Reembolso de gastos cubiertos por servicios obtenidos fuera de la red" de mi póliza ${l.planName}, por ${what}. El proveedor no acepta el plan.`,
-			l.answers['sin-red']
-				? 'No existe un proveedor de la misma especialidad en la red. Conforme a la póliza, solicito el reembolso del 100% de lo pagado, menos el copago aplicable.'
-				: 'Solicito el reembolso a la tarifa contratada por la red para un proveedor de la misma especialidad, menos el copago aplicable.',
+		return {
+			request: `Solicito el reembolso de gastos cubiertos por servicios obtenidos fuera de la red, conforme a la sección "Reembolso de gastos cubiertos por servicios obtenidos fuera de la red" de mi póliza ${l.planName}, por ${what}. El proveedor no acepta el plan.`,
 			closing
-		];
+		};
 	}
 	if (l.route === 'contigo-fit') {
-		const met = [
-			l.answers.hra && 'completé la evaluación de salud (HRA) en Mi Triple-S',
-			l.answers.preventiva && 'hice mi visita preventiva anual',
-			l.answers.licencia && 'el proveedor está certificado y licenciado'
-		].filter(Boolean);
-		return [
-			`Solicito el reembolso del beneficio Contigo Fit de mi póliza ${l.planName} ($20 mensuales, hasta 12 meses) por ${what}.`,
-			...(met.length ? [`Cumplo con los requisitos del beneficio: ${met.join(', ')}.`] : []),
-			closing
-		];
+		return { request: `Solicito el reembolso del beneficio Contigo Fit de mi póliza ${l.planName} ($20 mensuales, hasta 12 meses) por ${what}.`, closing };
 	}
 	if (l.route === 'vision') {
-		return [
-			`Solicito el reembolso del beneficio de espejuelos o lentes de contacto para adultos de mi póliza ${l.planName} (hasta $75 por año póliza) por ${what}, en una óptica no participante.`,
+		return {
+			request: `Solicito el reembolso del beneficio de espejuelos o lentes de contacto para adultos de mi póliza ${l.planName} (hasta $75 por año póliza) por ${what}, en una óptica no participante.`,
 			closing
-		];
+		};
 	}
-	return [`Solicito el reembolso por ${what} conforme a mi póliza ${l.planName}.`, closing];
+	return { request: `Solicito el reembolso por ${what} conforme a mi póliza ${l.planName}.`, closing };
 }
 
 export type BenefitExplanation = { basis: string; paragraphs: string[] };
@@ -195,43 +187,53 @@ export function benefitExplanation(l: LetterInput & { benefit: string }): Benefi
 	};
 }
 
+export type Delivery = 'print' | 'email' | 'before';
+
 export type StepsInput = {
 	insurer: Insurer;
-	received: boolean;
-	preauth: string | null;
-	conditions: string[];
+	route: RouteId;
+	delivery: Delivery;
+	preauth: boolean;
+	otherCoverage: boolean;
 	deadline: string;
 	deadlineDays: number;
-	otherCoverage: boolean;
 };
 
-// In the order the patient does them: requirements, then the provider, then signatures, then mailing.
+// Only what the patient does with the packet; plan rules are explained before the packet is made.
 export function packetSteps(s: StepsInput): string[] {
-	const send = (when: string) =>
-		`Envíe el formulario, la Explicación de Beneficios${s.received ? ', la carta de solicitud' : ''} y el recibo original ${when}. Guarde una copia.`;
-	const otherPlan = s.otherCoverage
-		? ['Pida a su otro seguro la Explicación de Beneficios (EOB) de este servicio y anéxela: muestra lo que pagó o denegó.']
-		: [];
-	if (s.received) {
+	const ts = s.insurer === 'triple-s';
+	const attach = [
+		s.route === 'ambulance' ? 'el recibo de la ambulancia' : s.route === 'cannabis' ? 'el recibo del dispensario' : 'el recibo original',
+		...(s.route === 'ambulance' ? ['el informe médico con el diagnóstico y la distancia recorrida'] : []),
+		...(s.route === 'cannabis' ? ['copia de su licencia de paciente de cannabis medicinal'] : []),
+		...(s.preauth ? ['copia de la autorización previa'] : []),
+		...(s.otherCoverage ? ['la Explicación de Beneficios (EOB) de su otro seguro'] : [])
+	];
+	const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}` : xs[0]);
+	const sign = ts ? 'Firme y feche la sección D del formulario y firme la carta.' : 'Firme y feche la sección 4 del formulario y firme la carta.';
+	const send = (when: string) => `Envíe el formulario, la carta y ${list(attach)} ${when}. Guarde una copia de todo.`;
+	const fromProvider = ts
+		? 'su proveedor complete y firme la sección E y le dé un recibo original, timbrado y firmado'
+		: 'su proveedor le dé un recibo original con su NPI, el diagnóstico (ICD-10) y los códigos CPT';
+
+	if (s.delivery === 'before') {
 		return [
-			...s.conditions,
-			s.insurer === 'triple-s'
-				? 'Pida a su proveedor que complete y firme la sección E y le dé un recibo original, timbrado y firmado.'
-				: 'Pida a su proveedor un recibo original con su NPI, el diagnóstico (ICD-10) y los códigos CPT.',
-			s.insurer === 'triple-s' ? 'Firme y feche la sección D del formulario.' : 'Firme y feche la sección 4 del formulario.',
-			'Firme la carta de solicitud.',
-			...otherPlan,
-			send(`antes del ${s.deadline || 'plazo de su plan'}`)
+			`Lleve este paquete a su cita. Pida que ${fromProvider}.`,
+			'Después del servicio, escriba la fecha y lo pagado en el formulario y en la carta.',
+			sign,
+			send(`dentro de ${deadlineWords(s.deadlineDays)} desde la fecha del servicio`)
 		];
 	}
-	return [
-		...(s.preauth ? [s.preauth] : []),
-		...s.conditions,
-		`Lleve este paquete a su cita. ${appointmentRequest(s.insurer)}`,
-		'Después del servicio, escriba la fecha y lo pagado en el formulario, y fírmelo.',
-		...otherPlan,
-		send(`dentro de ${deadlineWords(s.deadlineDays)} desde la fecha del servicio`)
-	];
+	const by = `antes del ${s.deadline || 'plazo de su plan'}`;
+	if (s.delivery === 'email') {
+		return [
+			`Espere a que ${ts ? 'su proveedor le devuelva el formulario con la sección E completada y firmada, y le dé' : 'su proveedor le dé'} el recibo original.`,
+			'Imprima el formulario y la carta.',
+			sign,
+			send(by)
+		];
+	}
+	return [`Lleve el paquete a su proveedor. Pida que ${fromProvider}.`, sign, send(by)];
 }
 
 export function providerRequest(insurer: Insurer): string {

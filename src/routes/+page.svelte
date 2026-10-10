@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import Linked from '#lib/components/Linked.svelte';
 	import { INSURERS, SERVICES, claimable, estimate } from '#lib/estimate.ts';
+	import { preauthWarning } from '#lib/justify.ts';
 	import type { Insurer, PatientPlanId, ServiceId } from '#lib/estimate.ts';
 
 	let insurer = $state<Insurer | ''>('');
@@ -12,6 +13,12 @@
 
 	const est = $derived(estimate(plan, service, 0));
 	const canClaim = $derived(claimable(est));
+	// Steps the patient must finish before the plan will pay, shown with the answer itself.
+	const before = $derived(
+		est && service && est.verdict === 'reimbursable'
+			? [...(preauthWarning(est.insurer, service) ? [preauthWarning(est.insurer, service) as string] : []), ...est.conditions]
+			: []
+	);
 	const EXAMPLES: { label: string; insurer: Insurer; plan: PatientPlanId; service: ServiceId }[] = [
 		{ label: 'Acupuntura · Triple-S Pocket Plata', insurer: 'triple-s', plan: 'pocket-plata', service: 'acupuntura' },
 		{ label: 'Especialista · First Medical Silver', insurer: 'first-medical', plan: 'fm-silver', service: 'especialista' },
@@ -104,6 +111,14 @@
 			<ul class="mt-4 space-y-2 text-sm">
 				{#each est.explanation as line (line)}<li>{line}</li>{/each}
 			</ul>
+			{#if before.length > 0}
+				<div class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+					<p class="font-semibold">Requisitos para que le reembolsen:</p>
+					<ul class="mt-1 list-disc space-y-1 pl-5">
+						{#each before as b (b)}<li><Linked text={b} insurer={est.insurer} /></li>{/each}
+					</ul>
+				</div>
+			{/if}
 			{#if est.alternatives.length > 0}
 				<p class="mt-4 text-sm font-semibold">Lo que le conviene:</p>
 				<ul class="mt-1 list-disc space-y-1 pl-5 text-sm">

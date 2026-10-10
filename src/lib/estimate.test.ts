@@ -41,7 +41,8 @@ describe('estimate', () => {
 		expect(e?.insurer).toBe('first-medical');
 		expect(e?.back).toBeNull();
 		expect(e?.explanation[0]).toContain('$20');
-		expect(e?.explanation[1]).toContain('prima mensual');
+		expect(e?.explanation[1]).toContain('no publica sus tarifas');
+		expect(e?.explanation[1]).toContain('99213');
 		expect(claimable(e)).toBe(true);
 	});
 

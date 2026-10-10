@@ -14,8 +14,10 @@
 	import { demoPatients } from '#lib/demo.ts';
 	import { CLAIM_RULES, INSURERS, SERVICES, claimable, deadlineFrom, estimate } from '#lib/estimate.ts';
 	import type { PatientPlanId, ServiceId } from '#lib/estimate.ts';
-	import { appointmentRequest, benefitExplanation, letterParagraphs, packetSteps, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
-	import { buildPatientPacket } from '#lib/pdf/patient-packet.ts';
+	import { benefitExplanation, letterParts, packetSteps, preauthWarning, providerRequest, questionsFor } from '#lib/justify.ts';
+	import type { Delivery } from '#lib/justify.ts';
+	import { buildPatientPacket, buildStepsPdf } from '#lib/pdf/patient-packet.ts';
+	import type { PatientPacketInput } from '#lib/pdf/patient-packet.ts';
 	import { isoToForm } from '#lib/pdf/triple-s.ts';
 
 	const planId = page.url.searchParams.get('plan') as PatientPlanId | null;
@@ -38,7 +40,7 @@
 		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 	};
 
-	type Step = 'received' | 'details' | 'questions' | 'you' | 'review' | 'send';
+	type Step = 'received' | 'details' | 'questions' | 'you' | 'review' | 'how' | 'print' | 'email' | 'send';
 	let step = $state<Step>('received');
 	let received = $state<boolean | null>(null);
 	let date = $state(today());
@@ -52,17 +54,27 @@
 	let myEmail = $state('');
 	let providerEmail = $state('');
 	let copied = $state(false);
+	let delivery = $state<'print' | 'email' | null>(null);
+	let sent = $state(false);
 	let pdf = $state<
 		| { status: 'idle' }
 		| { status: 'loading' }
 		| { status: 'error'; message: string }
-		| { status: 'ready'; url: string; blob: Blob }
+		| { status: 'ready'; url: string; blob: Blob; providerUrl: string; providerBlob: Blob; stepsUrl: string }
 	>({ status: 'idle' });
 
 	const flow = $derived<Step[]>(
 		received === false
 			? ['received', 'questions', 'you', 'review', 'send']
-			: ['received', 'details', ...(questions.length ? (['questions'] as Step[]) : []), 'you', 'review', 'send']
+			: [
+					'received',
+					'details',
+					...(questions.length ? (['questions'] as Step[]) : []),
+					'you',
+					'review',
+					'how',
+					...(delivery ? [delivery] : [])
+				]
 	);
 	const stepIndex = $derived(flow.indexOf(step));
 	const deadline = $derived(received ? deadlineFrom(date, rules.deadlineDays) : '');
@@ -163,7 +175,32 @@
 		questions: 'Preguntas',
 		you: 'Sus datos',
 		review: 'Revisar',
-		send: 'Enviar'
+		how: 'Entrega',
+		print: 'Imprimir',
+		email: 'Email',
+		send: 'Listo'
+	};
+
+	function pick(d: 'print' | 'email') {
+		delivery = d;
+		sent = false;
+		go(d);
+	}
+
+	const stepsFor = (d: Delivery) =>
+		packetSteps({
+			insurer,
+			route,
+			delivery: d,
+			preauth: !!preauth,
+			otherCoverage: patient.hasOtherCoverage,
+			deadline,
+			deadlineDays: rules.deadlineDays
+		});
+
+	const revoke = () => {
+		if (pdf.status !== 'ready') return;
+		for (const u of [pdf.url, pdf.providerUrl, pdf.stepsUrl]) URL.revokeObjectURL(u);
 	};
 
 	// Synthetic data so a demo can click straight through every step; ?demo fills it on load.
@@ -186,7 +223,7 @@
 
 	async function generate() {
 		if (!serviceId) return;
-		if (pdf.status === 'ready') URL.revokeObjectURL(pdf.url);
+		revoke();
 		pdf = { status: 'loading' };
 		if (step !== 'review') go('review');
 		editing = false;
@@ -195,25 +232,16 @@
 			const res = await fetch(asset(file));
 			if (!res.ok) throw new Error(`no se pudo cargar el formulario (${res.status})`);
 			const template = new Uint8Array(await res.arrayBuffer());
-			const steps = packetSteps({
-				insurer,
-				received: !!received,
-				preauth,
-				conditions: est?.conditions ?? [],
-				deadline,
-				deadlineDays: rules.deadlineDays,
-				otherCoverage: patient.hasOtherCoverage
-			});
 			const letterInput = {
 				insurer,
 				route,
 				planName,
 				serviceName,
-				date: isoToForm(date),
-				paid: Number.parseFloat(paid).toFixed(2),
+				date: received ? isoToForm(date) : '',
+				paid: received ? Number.parseFloat(paid).toFixed(2) : '',
 				answers: $state.snapshot(answers)
 			};
-			const bytes = await buildPatientPacket(template, {
+			const input: PatientPacketInput = {
 				insurer,
 				planName,
 				route,
@@ -225,13 +253,24 @@
 				patient: $state.snapshot(patient),
 				expected: est?.benefit ?? '',
 				deadline,
-				steps,
-				letter: letterParagraphs(letterInput),
+				steps: stepsFor(received ? 'print' : 'before'),
+				letter: letterParts(letterInput),
 				explanation: benefitExplanation({ ...letterInput, benefit: est?.benefit ?? '' }),
 				accident: isAccident ? $state.snapshot(accident) : null
-			});
-			const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
-			pdf = { status: 'ready', url: URL.createObjectURL(blob), blob };
+			};
+			const asPdf = (b: Uint8Array) => new Blob([b as BlobPart], { type: 'application/pdf' });
+			// The provider gets the form and letter only; the patient keeps the steps as their own PDF.
+			const blob = asPdf(await buildPatientPacket(template, input));
+			const providerBlob = asPdf(await buildPatientPacket(template, input, { cover: false }));
+			const stepsBlob = asPdf(await buildStepsPdf({ ...input, steps: stepsFor('email') }));
+			pdf = {
+				status: 'ready',
+				url: URL.createObjectURL(blob),
+				blob,
+				providerUrl: URL.createObjectURL(providerBlob),
+				providerBlob,
+				stepsUrl: URL.createObjectURL(stepsBlob)
+			};
 		} catch (e) {
 			pdf = { status: 'error', message: e instanceof Error ? e.message : String(e) };
 		}
@@ -243,8 +282,9 @@
 			await navigator.share({
 				title: emailSubject,
 				text: emailBody,
-				files: [new File([pdf.blob], 'reembolso.pdf', { type: 'application/pdf' })]
+				files: [new File([pdf.providerBlob], 'reembolso.pdf', { type: 'application/pdf' })]
 			});
+			sent = true;
 		} catch {
 			// User cancelled the share sheet.
 		}
@@ -260,14 +300,22 @@
 		}
 	}
 
-	onDestroy(() => {
-		if (pdf.status === 'ready') URL.revokeObjectURL(pdf.url);
-	});
+	onDestroy(revoke);
 
 	const btn = 'rounded-xl px-6 py-3 font-semibold shadow';
 	const primary = `${btn} bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-60`;
 	const secondary = `${btn} border border-slate-300 bg-white text-slate-800 hover:bg-slate-50`;
 </script>
+
+{#snippet nextSteps(steps: string[])}
+	<div class="mt-6 rounded-lg bg-teal-50 p-4 text-sm text-teal-950">
+		<p class="font-semibold">Próximos pasos</p>
+		<ol class="mt-2 list-decimal space-y-1 pl-5">
+			{#each steps as s (s)}<li>{s}</li>{/each}
+		</ol>
+		<div class="mt-3"><SendTo {insurer} {deadline} /></div>
+	</div>
+{/snippet}
 
 <div class="mx-auto max-w-2xl">
 	<a href={resolve('/')} class="text-sm text-teal-700 hover:underline">← Volver</a>
@@ -443,7 +491,7 @@
 					</a>
 					<p class="mt-6 font-semibold text-slate-900">¿Todo se ve correcto?</p>
 					<div class="mt-3 grid grid-cols-2 gap-3">
-						<button type="button" class={primary} onclick={() => go('send')}>Sí, todo correcto</button>
+						<button type="button" class={primary} onclick={() => go(received ? 'how' : 'send')}>Sí, todo correcto</button>
 						<button type="button" class={secondary} onclick={() => (editing = true)}>Corregir algo</button>
 					</div>
 				{:else if editing}
@@ -465,80 +513,89 @@
 					{/if}
 					<button type="button" class="mt-6 w-full {primary}" onclick={generate}>Guardar y volver a llenar</button>
 				{/if}
-			{:else if step === 'send'}
-				{#if received}
-					<h2 class="text-lg font-semibold text-slate-900">Envíelo a su proveedor</h2>
-					<p class="mt-1 text-sm text-slate-600">
-						{insurer === 'triple-s'
-							? 'Su proveedor completa y firma la sección E y se lo devuelve con el recibo.'
-							: 'Su proveedor le da el recibo original con NPI, diagnóstico y códigos.'}
-					</p>
-					<div class="mt-4 grid gap-4 sm:grid-cols-2">
-						<Field label="Su email" type="email" bind:value={myEmail} autocomplete="email" />
-						<Field label="Email del proveedor" type="email" bind:value={providerEmail} />
-					</div>
-					<label class="mt-4 block">
-						<span class="text-sm font-medium text-slate-700">Mensaje</span>
-						<textarea
-							readonly
-							rows="9"
-							class="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 text-sm"
-						>{emailBody}</textarea>
-					</label>
-					<div class="mt-4 flex flex-col gap-2 sm:flex-row">
-						{#if canShareFiles}
-							<button type="button" class={primary} onclick={share}>Enviar con el PDF</button>
-						{/if}
-						{#if pdf.status === 'ready'}
-							<a
-								href={mailto}
-								onclick={() => {
-									if (pdf.status !== 'ready') return;
-									const a = document.createElement('a');
-									a.href = pdf.url;
-									a.download = 'reembolso.pdf';
-									a.click();
-								}}
-								class="{canShareFiles ? secondary : primary} text-center"
-							>
-								Abrir en mi email
-							</a>
-						{/if}
-						<button type="button" class={secondary} onclick={copyMessage}>{copied ? '¡Copiado!' : 'Copiar mensaje'}</button>
-					</div>
-					<p class="mt-2 text-xs text-slate-500">
-						El email sale de su propia cuenta. Healing Aura no envía ni guarda nada.
-						{canShareFiles ? '' : 'Al abrir su email descargamos el PDF para que lo adjunte.'}
-					</p>
-					<div class="mt-6 border-t border-slate-100 pt-4">
-						<p class="text-sm font-semibold text-slate-800">¿Prefiere imprimirlo?</p>
-						{#if pdf.status === 'ready'}
-							<a href={pdf.url} download="reembolso.pdf" class="mt-2 inline-block {secondary}">Descargar para imprimir</a>
-						{/if}
-					</div>
-					<div class="mt-6 rounded-lg bg-teal-50 p-4 text-sm text-teal-900">
-						<p class="font-semibold">Cuando su proveedor se lo devuelva, firme y envíe todo.</p>
-						<div class="mt-2"><SendTo {insurer} {deadline} /></div>
-					</div>
-				{:else}
-					<h2 class="text-lg font-semibold text-slate-900">Llévelo a su cita o entrégueselo al proveedor</h2>
-					{#if pdf.status === 'ready'}
-						<a href={pdf.url} download="reembolso.pdf" class="mt-4 inline-block {primary}">Descargar para imprimir</a>
-					{/if}
-					<p class="mt-4 text-sm text-slate-700">{appointmentRequest(insurer)}</p>
-					{#if preauth}
-						<p class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-							<Linked text={preauth} {insurer} />
-						</p>
-					{/if}
-					<div class="mt-4 rounded-lg bg-teal-50 p-4 text-sm text-teal-900">
-						<p class="font-semibold">Después del servicio, añada la fecha y lo pagado, y firme.</p>
-						<div class="mt-2"><SendTo {insurer} /></div>
-					</div>
+			{:else if step === 'how'}
+				<h2 class="text-lg font-semibold text-slate-900">¿Cómo se lo hace llegar a su proveedor?</h2>
+				<p class="mt-1 text-sm text-slate-600">
+					{insurer === 'triple-s'
+						? 'Su proveedor tiene que completar y firmar la sección E y darle el recibo.'
+						: 'Su proveedor tiene que darle el recibo original con su NPI, el diagnóstico y los códigos.'}
+				</p>
+				<div class="mt-5 grid gap-3 sm:grid-cols-2">
+					<button type="button" class="{primary} text-left" onclick={() => pick('print')}>
+						<span class="block">Imprimirlo y llevárselo</span>
+						<span class="mt-1 block text-sm font-normal opacity-90">Descargue el paquete y entrégueselo en persona.</span>
+					</button>
+					<button type="button" class="{primary} text-left" onclick={() => pick('email')}>
+						<span class="block">Enviárselo por email</span>
+						<span class="mt-1 block text-sm font-normal opacity-90">Usted le envía el formulario y la carta desde su propio email.</span>
+					</button>
+				</div>
+			{:else if step === 'print'}
+				<h2 class="text-lg font-semibold text-slate-900">Imprímalo y lléveselo a su proveedor</h2>
+				{#if pdf.status === 'ready'}
+					<a href={pdf.url} download="reembolso.pdf" class="mt-4 inline-block {primary}">Descargar para imprimir</a>
 				{/if}
+				{@render nextSteps(stepsFor('print'))}
+			{:else if step === 'email'}
+				<h2 class="text-lg font-semibold text-slate-900">Envíele el PDF a su proveedor</h2>
+				<p class="mt-1 text-sm text-slate-600">Su proveedor recibe el formulario y la carta. Sus próximos pasos se quedan con usted.</p>
+				<div class="mt-4 grid gap-4 sm:grid-cols-2">
+					<Field label="Su email" type="email" bind:value={myEmail} autocomplete="email" />
+					<Field label="Email del proveedor" type="email" bind:value={providerEmail} />
+				</div>
+				<label class="mt-4 block">
+					<span class="text-sm font-medium text-slate-700">Mensaje</span>
+					<textarea readonly rows="9" class="mt-1 block w-full rounded-lg border-slate-300 bg-slate-50 text-sm">{emailBody}</textarea>
+				</label>
+				<div class="mt-4 flex flex-col gap-2 sm:flex-row">
+					{#if canShareFiles}
+						<button type="button" class={primary} onclick={share}>Enviar con el PDF</button>
+					{/if}
+					{#if pdf.status === 'ready'}
+						<a
+							href={mailto}
+							onclick={() => {
+								if (pdf.status !== 'ready') return;
+								const a = document.createElement('a');
+								a.href = pdf.providerUrl;
+								a.download = 'reembolso.pdf';
+								a.click();
+								sent = true;
+							}}
+							class="{canShareFiles ? secondary : primary} text-center"
+						>
+							Abrir en mi email
+						</a>
+					{/if}
+					<button type="button" class={secondary} onclick={copyMessage}>{copied ? '¡Copiado!' : 'Copiar mensaje'}</button>
+				</div>
+				<p class="mt-2 text-xs text-slate-500">
+					El email sale de su propia cuenta. Healing Aura no envía ni guarda nada.
+					{canShareFiles ? '' : 'Al abrir su email descargamos el PDF para que lo adjunte.'}
+				</p>
+				{@render nextSteps(stepsFor('email'))}
+				<div class="mt-4">
+					{#if sent && pdf.status === 'ready'}
+						<p class="text-sm font-semibold text-teal-900">Listo. Guarde sus próximos pasos:</p>
+						<a href={pdf.stepsUrl} download="proximos-pasos.pdf" class="mt-2 inline-block {primary}">Descargar mis próximos pasos (PDF)</a>
+					{:else}
+						<button type="button" class="text-sm font-medium text-teal-700 hover:underline" onclick={() => (sent = true)}>Ya se lo envié</button>
+					{/if}
+				</div>
+			{:else if step === 'send'}
+				<h2 class="text-lg font-semibold text-slate-900">Llévelo a su cita o entrégueselo al proveedor</h2>
+				{#if pdf.status === 'ready'}
+					<a href={pdf.url} download="reembolso.pdf" class="mt-4 inline-block {primary}">Descargar para imprimir</a>
+				{/if}
+				{#if preauth}
+					<p class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+						<Linked text={preauth} {insurer} />
+					</p>
+				{/if}
+				{@render nextSteps(stepsFor('before'))}
 			{/if}
 
-			{#if step !== 'received' && step !== 'review' && step !== 'send'}
+			{#if step === 'details' || step === 'questions' || step === 'you'}
 				<div class="mt-6 flex justify-between gap-3">
 					<button type="button" class={secondary} onclick={back}>Atrás</button>
 					<button type="button" class={primary} onclick={next}>{step === 'you' ? 'Llenar mi formulario' : 'Continuar'}</button>

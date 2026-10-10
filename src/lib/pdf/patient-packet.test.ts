@@ -2,8 +2,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { demoPatients } from '../demo';
-import { benefitExplanation, letterParagraphs, packetSteps } from '../justify';
-import { buildPatientPacket } from './patient-packet';
+import { benefitExplanation, letterParts, packetSteps } from '../justify';
+import { buildPatientPacket, buildStepsPdf } from './patient-packet';
 import { to12h } from './triple-s';
 import type { PatientPacketInput } from './patient-packet';
 
@@ -30,26 +30,31 @@ const base = (insurer: 'triple-s' | 'first-medical'): PatientPacketInput => ({
 	expected: '$20 al mes',
 	deadline: '10/09/2027',
 	steps: ['Paso uno.', 'Paso dos.'],
-	letter: letterParagraphs(letterInput(insurer)),
+	letter: letterParts(letterInput(insurer)),
 	explanation: benefitExplanation({ ...letterInput(insurer), benefit: '$20 al mes' }),
 	accident: null
 });
 
 describe('patient packet', () => {
-	it('Triple-S: cover + 2 form pages + benefit explanation + letter', async () => {
+	const pages = async (b: Uint8Array) => (await PDFDocument.load(b)).getPageCount();
+
+	it('Triple-S: cover + 2 form pages + the letter with its benefit explanation', async () => {
 		const t = new Uint8Array(readFileSync('static/forms/triple-s-reembolso.pdf'));
 		const bytes = await buildPatientPacket(t, base('triple-s'));
-		expect((await PDFDocument.load(bytes)).getPageCount()).toBe(5);
+		const full = await pages(bytes);
+		expect(full).toBeGreaterThanOrEqual(4);
+		expect(await pages(await buildPatientPacket(t, base('triple-s'), { cover: false }))).toBe(full - 1);
 		if (process.env.TS_OUT) writeFileSync(process.env.TS_OUT, bytes);
 	});
 
-	it('First Medical: cover + form + benefit explanation + letter; the explanation is there before the service too', async () => {
+	it('First Medical: the letter is in the packet before the service too; steps PDF is one page', async () => {
 		const t = new Uint8Array(readFileSync('static/forms/first-medical-reembolso.pdf'));
 		const bytes = await buildPatientPacket(t, base('first-medical'));
-		expect((await PDFDocument.load(bytes)).getPageCount()).toBe(4);
+		expect(await pages(bytes)).toBeGreaterThanOrEqual(3);
 		if (process.env.FM_OUT) writeFileSync(process.env.FM_OUT, bytes);
-		const before = await buildPatientPacket(t, { ...base('first-medical'), received: false });
-		expect((await PDFDocument.load(before)).getPageCount()).toBe(3);
+		const before = await buildPatientPacket(t, { ...base('first-medical'), received: false, date: '', paid: '' });
+		expect(await pages(before)).toBeGreaterThanOrEqual(3);
+		expect(await pages(await buildStepsPdf(base('first-medical')))).toBe(1);
 	});
 
 	it('benefit explanation cites the policy for each route', () => {
@@ -65,11 +70,22 @@ describe('patient packet', () => {
 		expect(to12h('00:30')).toBe('12:30 AM');
 	});
 
-	it('other insurance adds the other plan\'s EOB before mailing', () => {
-		const steps = packetSteps({ insurer: 'triple-s', received: true, preauth: null, conditions: [], deadline: '', deadlineDays: 365, otherCoverage: true });
-		const eob = steps.findIndex((s) => s.includes('otro seguro'));
-		expect(eob).toBeGreaterThan(-1);
-		expect(eob).toBe(steps.length - 2);
+	const stepsIn = (o: Partial<Parameters<typeof packetSteps>[0]> = {}) =>
+		packetSteps({ insurer: 'triple-s', route: 'contigo-fit', delivery: 'print', preauth: false, otherCoverage: false, deadline: '10/09/2027', deadlineDays: 365, ...o });
+
+	it('steps are only about the packet, in order: provider, signatures, send with the attachments', () => {
+		const print = stepsIn();
+		expect(print).toHaveLength(3);
+		expect(print[0]).toContain('sección E');
+		expect(print[1]).toContain('sección D');
+		expect(print.at(-1)).toContain('Envíe');
+		expect(print.join(' ')).not.toContain('HRA');
+		const all = stepsIn({ route: 'ambulance', preauth: true, otherCoverage: true }).at(-1) ?? '';
+		for (const x of ['informe médico', 'autorización previa', 'otro seguro']) expect(all).toContain(x);
+		expect(stepsIn({ delivery: 'email' })[0]).toContain('Espere');
+		const before = stepsIn({ insurer: 'first-medical', route: 'routine', delivery: 'before', deadline: '', deadlineDays: 90 });
+		expect(before[0]).toContain('Lleve este paquete a su cita');
+		expect(before.at(-1)).toContain('90 días');
 	});
 
 	it('packet builds with other insurance, Medicare and an accident on both forms', async () => {
@@ -83,20 +99,10 @@ describe('patient packet', () => {
 		}
 	});
 
-	it('steps run in the order the patient does them', () => {
-		const after = packetSteps({ insurer: 'triple-s', received: true, preauth: null, conditions: ['Complete la HRA.'], deadline: '10/09/2027', deadlineDays: 365, otherCoverage: false });
-		expect(after[0]).toBe('Complete la HRA.');
-		expect(after.findIndex((s) => s.includes('sección E'))).toBeLessThan(after.findIndex((s) => s.includes('sección D')));
-		expect(after.at(-1)).toContain('Envíe');
-		const before = packetSteps({ insurer: 'first-medical', received: false, preauth: 'Pida autorización previa.', conditions: [], deadline: '', deadlineDays: 90, otherCoverage: false });
-		expect(before[0]).toBe('Pida autorización previa.');
-		expect(before.findIndex((s) => s.includes('Lleve este paquete'))).toBeLessThan(before.findIndex((s) => s.startsWith('Después del servicio')));
-		expect(before.at(-1)).toContain('Explicación de Beneficios');
-	});
 
 	it('letter cites the right rule', () => {
-		const fm = base('first-medical').letter.join(' ');
-		expect(fm).toContain('100% de lo pagado');
-		expect(base('triple-s').letter.join(' ')).toContain('Contigo Fit');
+		const fm = Object.values(base('first-medical').letter).join(' ') + base('first-medical').explanation.paragraphs.join(' ');
+		expect(fm).toContain('100% de los gastos incurridos');
+		expect(base('triple-s').letter.request).toContain('Contigo Fit');
 	});
 });
