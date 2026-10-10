@@ -4,18 +4,19 @@ import { deadlineWords } from './estimate.ts';
 import type { RouteId } from './plans.ts';
 import { routeById } from './plans.ts';
 
-export type Question = { id: string; text: string; warnIfNo?: string };
+// blocksIfNo: a "No" means the claim can't succeed, so the wizard stops instead of only warning.
+export type Question = { id: string; text: string; warnIfNo?: string; blocksIfNo?: boolean };
 
 export function questionsFor(insurer: Insurer, route: RouteId): Question[] {
 	if (insurer === 'triple-s' && route === 'contigo-fit') {
 		return [
-			{ id: 'hra', text: '¿Completó la evaluación de salud (HRA) en la app Mi Triple-S?', warnIfNo: 'Complete la HRA en Mi Triple-S antes de someter: Contigo Fit la requiere.' },
-			{ id: 'preventiva', text: '¿Hizo su visita preventiva anual?', warnIfNo: 'Haga su visita preventiva en una clínica Salus o Centro Preventivo: Contigo Fit la requiere.' },
-			{ id: 'licencia', text: '¿Su proveedor está certificado y licenciado?', warnIfNo: 'Contigo Fit solo reembolsa proveedores certificados y licenciados.' }
+			{ id: 'hra', text: '¿Completó la evaluación de salud (HRA) en la app Mi Triple-S?', warnIfNo: 'Contigo Fit requiere la evaluación de salud (HRA). Complétela en la app Mi Triple-S y vuelva para preparar su reembolso.', blocksIfNo: true },
+			{ id: 'preventiva', text: '¿Hizo su visita preventiva anual?', warnIfNo: 'Contigo Fit requiere la visita preventiva anual. Hágala en una clínica Salus o Centro Preventivo y vuelva para preparar su reembolso.', blocksIfNo: true },
+			{ id: 'licencia', text: '¿Su proveedor está certificado y licenciado?', warnIfNo: 'Contigo Fit solo reembolsa servicios de proveedores certificados y licenciados.', blocksIfNo: true }
 		];
 	}
 	if (insurer === 'triple-s' && route === 'vision') {
-		return [{ id: 'adulto', text: '¿La persona que recibió el servicio tiene 21 años o más?', warnIfNo: 'Este beneficio es solo para adultos de 21 años o más.' }];
+		return [{ id: 'adulto', text: '¿La persona que recibió el servicio tiene 21 años o más?', warnIfNo: 'El reembolso de espejuelos de Triple-S es solo para adultos de 21 años o más.', blocksIfNo: true }];
 	}
 	if (insurer === 'first-medical' && route === 'routine') {
 		return [{ id: 'sin-red', text: '¿Buscó un proveedor de esta especialidad en la red de First Medical y no había?' }];

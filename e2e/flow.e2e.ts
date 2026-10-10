@@ -320,3 +320,35 @@ test('bad link shows an error, not a blank page', async ({ page }) => {
 	await page.goto('/paciente#garbage');
 	await expect(page.getByText('No pudimos leer este enlace.')).toBeVisible();
 });
+
+test('a disqualifying answer stops the wizard with the reason', async ({ page }) => {
+	await page.goto('/reclamar?plan=pocket-plata&servicio=espejuelos&demo=');
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	await page.getByRole('button', { name: 'Continuar' }).click();
+	await expect(page.getByText('¿La persona que recibió el servicio tiene 21 años o más?')).toBeVisible();
+	await page.getByRole('button', { name: 'No', exact: true }).click();
+	await expect(page.getByRole('alert')).toContainText('no califica para este reembolso');
+	await expect(page.getByRole('alert')).toContainText('solo para adultos de 21 años o más');
+	await expect(page.getByRole('button', { name: 'Continuar' })).toHaveCount(0);
+	await expect(page.getByRole('link', { name: 'Volver al inicio' })).toBeVisible();
+
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	await expect(page.getByRole('alert')).toHaveCount(0);
+	await page.getByRole('button', { name: 'Continuar' }).click();
+	await expect(page.getByRole('button', { name: 'Llenar mi formulario' })).toBeVisible();
+
+	await page.goBack();
+	await page.getByRole('button', { name: 'No', exact: true }).click();
+	await page.goForward();
+	await expect(page.getByText('¿La persona que recibió el servicio tiene 21 años o más?')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Llenar mi formulario' })).toHaveCount(0);
+});
+
+test('Contigo Fit stops when the provider is not licensed', async ({ page }) => {
+	await page.goto('/reclamar?plan=pocket-plata&servicio=acupuntura&demo=');
+	await page.getByRole('button', { name: 'Sí', exact: true }).click();
+	await page.getByRole('button', { name: 'Continuar' }).click();
+	await page.getByRole('button', { name: 'No', exact: true }).last().click();
+	await expect(page.getByRole('alert')).toContainText('proveedores certificados y licenciados');
+	await expect(page.getByRole('button', { name: 'Continuar' })).toHaveCount(0);
+});

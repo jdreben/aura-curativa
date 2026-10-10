@@ -96,7 +96,10 @@
 			? ['Describa el accidente.']
 			: [])
 	]);
-	const warnings = $derived(questions.filter((q) => answers[q.id] === false && q.warnIfNo).map((q) => q.warnIfNo as string));
+	const warnings = $derived(questions.filter((q) => answers[q.id] === false && q.warnIfNo && !q.blocksIfNo).map((q) => q.warnIfNo as string));
+	const blockers = $derived(
+		received ? questions.filter((q) => answers[q.id] === false && q.blocksIfNo).map((q) => q.warnIfNo ?? q.text) : []
+	);
 
 	const emailBody = $derived(
 		[
@@ -125,6 +128,7 @@
 		attempted = true;
 		if (step === 'details' && detailProblems.length) return;
 		if (step === 'questions' && received && questions.some((q) => answers[q.id] === undefined)) return;
+		if (step === 'questions' && blockers.length) return;
 		if (step === 'you' && youProblems.length) {
 			return;
 		}
@@ -151,7 +155,9 @@
 
 	$effect(() => {
 		const s = page.state.step as Step | undefined;
-		const target = s && flow.includes(s) ? s : 'received';
+		let target: Step = s && flow.includes(s) ? s : 'received';
+		// The browser's forward button must not skip past an answer that disqualifies the claim.
+		if (blockers.length && flow.indexOf(target) > flow.indexOf('questions')) target = 'questions';
 		if (target !== step) {
 			attempted = false;
 			editing = false;
@@ -434,6 +440,15 @@
 							</div>
 						{/each}
 					</div>
+					{#if blockers.length > 0}
+						<div class="mt-4 rounded-lg border border-rose-300 bg-rose-50 p-4 text-sm text-rose-900" role="alert">
+							<p class="font-semibold">Con esta respuesta, no califica para este reembolso.</p>
+							<ul class="mt-2 list-disc space-y-1 pl-5">
+								{#each blockers as b (b)}<li><Linked text={b} {insurer} /></li>{/each}
+							</ul>
+							<p class="mt-2">No podemos preparar el formulario porque el plan lo rechazaría. Si su respuesta cambia, vuelva a contestar.</p>
+						</div>
+					{/if}
 					{#if warnings.length > 0}
 						<ul class="mt-4 space-y-1 text-sm text-amber-900">
 							{#each warnings as w (w)}<li>⚠ <Linked text={w} {insurer} /></li>{/each}
@@ -589,7 +604,11 @@
 			{#if step === 'details' || step === 'questions' || step === 'you'}
 				<div class="mt-6 flex justify-between gap-3">
 					<button type="button" class={secondary} onclick={back}>Atrás</button>
-					<button type="button" class={primary} onclick={next}>{step === 'you' ? 'Llenar mi formulario' : 'Continuar'}</button>
+					{#if step === 'questions' && blockers.length}
+						<a href={resolve('/')} class="{primary} text-center">Volver al inicio</a>
+					{:else}
+						<button type="button" class={primary} onclick={next}>{step === 'you' ? 'Llenar mi formulario' : 'Continuar'}</button>
+					{/if}
 				</div>
 			{/if}
 		</section>
