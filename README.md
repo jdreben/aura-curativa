@@ -1,7 +1,7 @@
 # Aura Curativa
 
-**¿Me reembolsan?** Before a patient in Puerto Rico pays a provider outside their plan's network, Healing
-Aura tells them whether their plan will pay them back, roughly how much, what would cost less, and
+**¿Me reembolsan?** Before a patient in Puerto Rico pays a provider outside their plan's network, Aura
+Curativa tells them whether their plan will pay them back, roughly how much, what would cost less, and
 exactly how to file the claim.
 
 **Live demo:** https://18-212-154-202.sslip.io (no account needed)
@@ -40,18 +40,21 @@ We read the 2027 policies and published estimates so patients don't have to:
    - **Todavía no:** a preauthorization warning when the plan requires one, then the form filled as far as
      possible to bring to the appointment.
    - **Review:** a summary plus the PDF; *Corregir algo* opens every field, then regenerates.
-   - **Send to the provider:** a prefilled email asking them to complete and sign their part. On phones it
-     shares the PDF through the share sheet; elsewhere it opens the patient's email app and downloads the
-     PDF to attach. The email goes from the patient's own account; nothing touches a server.
+   - **Get it to the provider:** either *print it and bring it*, or *send it by email*. The email page
+     has a prefilled message, a download of the form and letter for the provider, and a download of the
+     full packet (next steps, form and letter) for the patient. The email goes from the patient's own
+     account; nothing touches a server.
+   - **Finish:** *Terminar y volver al inicio* clears everything the patient typed from memory, shows a
+     short "datos borrados" confirmation, and returns to the home page.
 
-Providers can also prepare the whole claim for the patient at [`/proveedor`](https://18-212-154-202.sslip.io/proveedor):
-import the patient, run the same coverage check, and hand over a QR code. The patient reviews and
-accepts on their phone, and the provider prints the packet once the patient's code matches.
+An earlier prototype of a provider-side flow lives at [`/proveedor`](https://18-212-154-202.sslip.io/proveedor)
+(the provider prepares the claim and hands the patient a QR code). It is not part of the submitted
+product; a fuller provider flow is on the roadmap.
 
 ## Demo shortcut
 
-Add `?demo` to the URL (e.g. `/?demo`, then an example and *¡Empecemos!*, or `/proveedor?demo`) to fill
-every form with synthetic data. The *Datos de ejemplo* button on the claim wizard and the provider page does the same.
+Add `?demo` to the URL (e.g. `/?demo`, then an example and *¡Empecemos!*) to fill every form with
+synthetic data. The *Datos de ejemplo* button on the claim wizard does the same.
 
 ## Plan comparison (`/comparar`)
 
@@ -82,7 +85,7 @@ npm run dev        # http://localhost:5173
 npm run test       # estimator, plan rules, payload, validators, PDF packets
 npm run check      # svelte-check
 npm run build      # static site in build/
-npm run e2e        # Playwright, desktop + phone: patient estimate → form; provider QR → accept → print
+npm run e2e        # Playwright, desktop + phone: estimate → claim wizard → downloads → finish
                    # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
 npm run demo-video          # patient-flow video → demo-video/aura-curativa-patient.mp4 (ffmpeg, pdftoppm)
 npm run demo-video:provider # provider-flow video → demo-video/aura-curativa-provider.mp4
@@ -96,6 +99,14 @@ scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 - `src/lib/plans.ts`: reimbursement routes for the provider flow.
 - `src/lib/pdf/triple-s.ts`: fills the real AcroForm fields of `static/forms/triple-s-reembolso.pdf`
   (Rev. 06/2009) by name; `scripts/list-fields.mjs` prints them.
+- `src/lib/pdf/first-medical.ts`: places values on First Medical's flat form by page coordinates;
+  `scripts/dump-labels.mjs` prints a page's text positions, and `scripts/split-pages.mjs` splits a PDF.
+- `src/lib/justify.ts`: the claim questions, the policy letter, the next steps and the provider email.
+
+## Pitch materials
+
+- `docs/devpost.md`: the Devpost story. `docs/devpost-thumbnail.png` and `docs/devpost-gallery/`: images.
+- `docs/slides/aura-curativa-deck.pptx` and `.pdf`: the 6-slide pitch deck.
 
 ## Research
 
@@ -111,4 +122,5 @@ scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 - Only 2027 individual plans from Triple-S and First Medical for now. MCS, Menonita, Bella Vista, Ryder
   and employer plans come next.
 - Signatures and the provider's stamp stay on paper.
-- The provider flow's intake-record import is simulated with three synthetic patients.
+- The patient still mails or emails the claim to the insurer.
+- The `/proveedor` prototype's intake-record import is simulated with three synthetic patients.

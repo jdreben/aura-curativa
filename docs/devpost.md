@@ -2,7 +2,7 @@
 
 Health insurance plans can be difficult to navigate and in-network coverage can often be limiting. On top of that, who wants to figure out how to submit complex reimbursement claims for services that might not even be covered by your plan? 
 
-This results in patients frequently taking on the financial burden for out-of-network services, or just not seeking care at all, because they don't realize they could be reimbursed by their plans. Even when they do realize it, it can be a hastle to locate the right form, fill it out correctly, and draft the letter explaining why the services are covered under the plan. Plus, even after all of that, you still have to coordinate with your doctor so they fill out their end of the form. 
+This results in patients frequently taking on the financial burden for out-of-network services, or just not seeking care at all, because they don't realize they could be reimbursed by their plans. Even when they do realize it, it can be a hassle to locate the right form, fill it out correctly, and draft the letter explaining why the services are covered under the plan. Plus, even after all of that, you still have to coordinate with your doctor so they fill out their end of the form. 
 
 With Aura Curativa, patients can easily generate a completed claim form for their out-of-network visit or service so it can easily be completed by the provider and then mailed or emailed to their insurance company. No more long hours spent tracking down the right form or figuring out the coverage details of your plan. Aura Curativa makes it easy to understand your coverage and submit claims for reimbursement, so you can focus on your health instead of paperwork. 
 
@@ -18,7 +18,7 @@ Before or after a patient in Puerto Rico pays an out-of-network provider, Aura C
    - the insurer's own claim form, filled in, with the provider's section left blank for them to complete,
    - a letter to the insurance company citing the exact policy clause that entitles you to the refund.
 5. **Send it to your provider.** Either print out the packet and take it to your provider or tap a button to generate a prefilled email asking your provider to complete and sign their part before sending it back. The email comes from the patient's own email account.
-5. **File your claim.** Once your provider returns the completed form, you just follow the rules on the cover sheet of the packet to mail or email the claim to your insurance company and wait for the money to roll in.
+6. **File your claim.** Once your provider returns the completed form, you just follow the rules on the cover sheet of the packet to mail or email the claim to your insurance company and wait for the money to roll in.
 
 If the patient hasn't had the visit yet, the app warns them when the plan needs preauthorization. It also fills the form as far as it can, so they can bring it to the appointment.
 

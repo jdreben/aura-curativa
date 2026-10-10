@@ -234,13 +234,4 @@ export async function buildPatientPacket(
 	return out.save();
 }
 
-// The "Pasos" page on its own, for patients who emailed the packet to their provider.
-export async function buildStepsPdf(i: PatientPacketInput): Promise<Uint8Array> {
-	const out = await PDFDocument.create();
-	out.setTitle('Próximos pasos');
-	out.setProducer('Aura Curativa');
-	drawCover(out, { regular: await out.embedFont(StandardFonts.Helvetica), bold: await out.embedFont(StandardFonts.HelveticaBold) }, i);
-	return out.save();
-}
-
 export const formatDate = isoToForm;

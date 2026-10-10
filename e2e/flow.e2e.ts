@@ -169,6 +169,12 @@ test('patient who already got the service: guided form, review, fix, send to pro
 	]);
 	const pdf = await PDFDocument.load(readFileSync((await download.path()) ?? ''));
 	expect(pdf.getPageCount()).toBe(4);
+
+	await expect(page.getByText('Nada de lo que escribió se guarda.', { exact: false })).toBeVisible();
+	await page.getByRole('button', { name: 'Terminar y volver al inicio' }).click();
+	await expect(page.getByRole('dialog')).toContainText('¡Datos borrados!', { timeout: 5000 });
+	await expect(page).toHaveURL(/\/$/, { timeout: 10000 });
+	await expect(page.getByRole('heading', { name: '¿Me reembolsan?' })).toBeVisible();
 });
 
 test('patient before the service: preauthorization warning, form to bring', async ({ page }) => {

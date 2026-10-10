@@ -2,7 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { asset, resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { pushState } from '$app/navigation';
+	import { goto, pushState } from '$app/navigation';
 	import Field from '#lib/components/Field.svelte';
 	import PatientFields from '#lib/components/PatientFields.svelte';
 	import OtherCoverageFields from '#lib/components/OtherCoverageFields.svelte';
@@ -275,12 +275,50 @@
 		}
 	}
 
+	// Nothing was ever stored, so finishing only drops what is in memory before leaving.
+	async function finish() {
+		revoke();
+		pdf = { status: 'idle' };
+		patient = { ...emptyPatient(), state: 'PR' };
+		accident = emptyAccident();
+		answers = {};
+		paid = '';
+		try {
+			const { default: Swal } = await import('sweetalert2');
+			Swal.fire({
+				title: 'Borrando sus datos…',
+				allowOutsideClick: false,
+				showConfirmButton: false,
+				didOpen: () => Swal.showLoading()
+			});
+			await new Promise((r) => setTimeout(r, 1200));
+			await Swal.fire({
+				icon: 'success',
+				title: '¡Datos borrados!',
+				text: 'Nada de lo que escribió se guardó. Gracias por usar Aura Curativa.',
+				timer: 2200,
+				timerProgressBar: true,
+				showConfirmButton: false
+			});
+		} catch {
+			// The animation is optional; still finish if it fails to load.
+		}
+		await goto(resolve('/'), { replaceState: true });
+	}
+
 	onDestroy(revoke);
 
 	const btn = 'rounded-xl px-6 py-3 font-semibold shadow';
 	const primary = `${btn} bg-teal-700 text-white hover:bg-teal-800 disabled:opacity-60`;
 	const secondary = `${btn} border border-slate-300 bg-white text-slate-800 hover:bg-slate-50`;
 </script>
+
+{#snippet finishBlock()}
+	<div class="mt-8 border-t border-slate-200 pt-6 text-center">
+		<button type="button" class="w-full {secondary} sm:w-auto" onclick={finish}>Terminar y volver al inicio</button>
+		<p class="mt-2 text-xs text-slate-500">Nada de lo que escribió se guarda. Al terminar, se borra de este dispositivo.</p>
+	</div>
+{/snippet}
 
 {#snippet nextSteps(steps: string[])}
 	<div class="mt-6 rounded-lg bg-teal-50 p-4 text-sm text-teal-950">
@@ -511,6 +549,7 @@
 					<a href={pdf.url} download="reembolso.pdf" class="mt-4 inline-block {primary}">Descargar para imprimir</a>
 				{/if}
 				{@render nextSteps(stepsFor('print'))}
+				{@render finishBlock()}
 			{:else if step === 'email'}
 				<h2 class="text-lg font-semibold text-slate-900">Envíele el PDF a su proveedor</h2>
 				<p class="mt-1 text-sm text-slate-600">Su proveedor recibe el formulario y la carta. Sus próximos pasos se quedan con usted.</p>
@@ -532,6 +571,7 @@
 				{#if pdf.status === 'ready'}
 					<a href={pdf.emailPacketUrl} download="reembolso-completo.pdf" class="mt-4 inline-block {primary}">Descargar el paquete completo (PDF)</a>
 				{/if}
+				{@render finishBlock()}
 			{:else if step === 'send'}
 				<h2 class="text-lg font-semibold text-slate-900">Llévelo a su cita o entrégueselo al proveedor</h2>
 				{#if pdf.status === 'ready'}
@@ -543,6 +583,7 @@
 					</p>
 				{/if}
 				{@render nextSteps(stepsFor('before'))}
+				{@render finishBlock()}
 			{/if}
 
 			{#if step === 'details' || step === 'questions' || step === 'you'}

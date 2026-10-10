@@ -3,7 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { demoPatients } from '../demo';
 import { benefitExplanation, letterParts, packetSteps } from '../justify';
-import { buildPatientPacket, buildStepsPdf } from './patient-packet';
+import { buildPatientPacket } from './patient-packet';
 import { to12h } from './triple-s';
 import type { PatientPacketInput } from './patient-packet';
 
@@ -47,14 +47,13 @@ describe('patient packet', () => {
 		if (process.env.TS_OUT) writeFileSync(process.env.TS_OUT, bytes);
 	});
 
-	it('First Medical: the letter is in the packet before the service too; steps PDF is one page', async () => {
+	it('First Medical: the letter is in the packet before the service too', async () => {
 		const t = new Uint8Array(readFileSync('static/forms/first-medical-reembolso.pdf'));
 		const bytes = await buildPatientPacket(t, base('first-medical'));
 		expect(await pages(bytes)).toBe(3);
 		if (process.env.FM_OUT) writeFileSync(process.env.FM_OUT, bytes);
 		const before = await buildPatientPacket(t, { ...base('first-medical'), received: false, date: '', paid: '' });
 		expect(await pages(before)).toBe(3);
-		expect(await pages(await buildStepsPdf(base('first-medical')))).toBe(1);
 	});
 
 	it('the letter stays on one page even with a long explanation', async () => {
