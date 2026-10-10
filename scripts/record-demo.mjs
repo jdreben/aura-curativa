@@ -173,7 +173,7 @@ for (const [file, text] of show) {
 	await sleep(1200);
 }
 await p3.setContent(
-	`<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ccfbf1,#ede9fe);font-family:system-ui"><div style="text-align:center"><div style="font-size:56px;font-weight:800;color:#134e4a">Healing Aura</div><div style="font-size:24px;color:#334155;margin-top:12px">Out-of-network reimbursement, made easy in Puerto Rico.</div><div style="font-size:18px;color:#475569;margin-top:28px">Honest coverage answers · No database · Next: MCS, group/PPO plans, email submission</div></div></body>`
+	`<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ccfbf1,#ede9fe);font-family:system-ui"><div style="text-align:center"><div style="font-size:56px;font-weight:800;color:#134e4a">Aura Curativa</div><div style="font-size:24px;color:#334155;margin-top:12px">Out-of-network reimbursement, made easy in Puerto Rico.</div><div style="font-size:18px;color:#475569;margin-top:28px">Honest coverage answers · No database · Next: MCS, group/PPO plans, email submission</div></div></body>`
 );
 await sleep(4500);
 await docs.close();
@@ -184,7 +184,7 @@ const seg = (n) => {
 	const dir = join(RAW, n);
 	return join(dir, readdirSync(dir).find((f) => f.endsWith('.webm')));
 };
-const final = join('demo-video', 'healing-aura-provider.mp4');
+const final = join('demo-video', 'aura-curativa-provider.mp4');
 const fit = 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=0xccfbf1,setsar=1,fps=30';
 execFileSync(
 	'ffmpeg',

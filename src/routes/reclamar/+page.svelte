@@ -120,7 +120,7 @@
 		`mailto:${encodeURIComponent(providerEmail)}?${new URLSearchParams({
 			...(myEmail ? { cc: myEmail } : {}),
 			subject: emailSubject,
-			body: `${emailBody}\n\n(Adjunte el PDF que descargó de Healing Aura.)`
+			body: `${emailBody}\n\n(Adjunte el PDF que descargó de Aura Curativa.)`
 		})
 			.toString()
 			.replace(/\+/g, '%20')}`
@@ -574,7 +574,7 @@
 					<button type="button" class={secondary} onclick={copyMessage}>{copied ? '¡Copiado!' : 'Copiar mensaje'}</button>
 				</div>
 				<p class="mt-2 text-xs text-slate-500">
-					El email sale de su propia cuenta. Healing Aura no envía ni guarda nada.
+					El email sale de su propia cuenta. Aura Curativa no envía ni guarda nada.
 					{canShareFiles ? '' : 'Al abrir su email descargamos el PDF para que lo adjunte.'}
 				</p>
 				{@render nextSteps(stepsFor('email'))}

@@ -115,6 +115,6 @@ await endCard(d, '¿Me reembolsan? Know before you pay.', 'Triple-S and First Me
 await docs.close();
 await browser.close();
 
-const final = join('demo-video', 'healing-aura-patient.mp4');
+const final = join('demo-video', 'aura-curativa-patient.mp4');
 stitch([{ file: webm(join(OUT, 'raw1')) }, { file: webm(join(OUT, 'raw2')) }], final);
 console.log(final);

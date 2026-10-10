@@ -87,7 +87,7 @@ export async function showPdfPages(page, pdfPath, outDir, pages) {
 
 export async function endCard(page, subtitle, footer) {
 	await page.setContent(
-		`<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ccfbf1,#ede9fe);font-family:system-ui"><div style="text-align:center"><div style="font-size:56px;font-weight:800;color:#134e4a">Healing Aura</div><div style="font-size:24px;color:#334155;margin-top:12px">${subtitle}</div><div style="font-size:18px;color:#475569;margin-top:28px">${footer}</div></div></body>`
+		`<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ccfbf1,#ede9fe);font-family:system-ui"><div style="text-align:center"><div style="font-size:56px;font-weight:800;color:#134e4a">Aura Curativa</div><div style="font-size:24px;color:#334155;margin-top:12px">${subtitle}</div><div style="font-size:18px;color:#475569;margin-top:28px">${footer}</div></div></body>`
 	);
 	await sleep(4500);
 }

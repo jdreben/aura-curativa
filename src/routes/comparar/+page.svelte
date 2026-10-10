@@ -48,7 +48,7 @@
 	const cell = (p: ComparePlan, s: ServiceId) => estimate(p.id, s, 0);
 </script>
 
-<svelte:head><title>Compare planes {PLAN_YEAR} — Healing Aura</title></svelte:head>
+<svelte:head><title>Compare planes {PLAN_YEAR} — Aura Curativa</title></svelte:head>
 
 <section class="text-center">
 	<h1 class="text-3xl font-bold tracking-tight text-teal-900 sm:text-4xl">Compare planes {PLAN_YEAR}</h1>

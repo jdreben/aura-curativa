@@ -1,4 +1,4 @@
-# Healing Aura
+# Aura Curativa
 
 **¿Me reembolsan?** Before a patient in Puerto Rico pays a provider outside their plan's network, Healing
 Aura tells them whether their plan will pay them back, roughly how much, what would cost less, and
@@ -84,8 +84,8 @@ npm run check      # svelte-check
 npm run build      # static site in build/
 npm run e2e        # Playwright, desktop + phone: patient estimate → form; provider QR → accept → print
                    # BASE_URL=https://18-212-154-202.sslip.io npm run e2e  to test the live site
-npm run demo-video          # patient-flow video → demo-video/healing-aura-patient.mp4 (ffmpeg, pdftoppm)
-npm run demo-video:provider # provider-flow video → demo-video/healing-aura-provider.mp4
+npm run demo-video          # patient-flow video → demo-video/aura-curativa-patient.mp4 (ffmpeg, pdftoppm)
+npm run demo-video:provider # provider-flow video → demo-video/aura-curativa-provider.mp4
 scripts/deploy.sh  # build + rsync to the EC2 host (Caddy, auto HTTPS)
 ```
 

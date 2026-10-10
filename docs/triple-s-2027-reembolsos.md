@@ -140,7 +140,7 @@ point to the forms section of ssspr.com.
 
 Pocket plans show Red Pocket / Blue Select where they differ.
 
-## Implications for Healing Aura
+## Implications for Aura Curativa
 
 1. **Add a "razón de la solicitud" field.** It's the one required item the packet doesn't produce yet.
 2. **Plan + route checker.** Before building a claim, tell the patient which route applies (or that none
