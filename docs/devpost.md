@@ -35,7 +35,7 @@ No account, no sign-up, nothing stored.
 - **Research first.** We read the 2027 policy documents for five Triple-S individual plans and four First Medical Directo plans. We also read Triple-S's published out-of-network estimates under Ley 134-2020. Then we turned each plan's reimbursement rules into code: closed versus open network, the rate basis, copays and coinsurance, filing deadlines, exclusions, and named benefits like Contigo Fit and adult glasses.
 - **SvelteKit + TypeScript + Tailwind**, built as a static site. There is no backend at all.
 - **pdf-lib in the browser.** It fills Triple-S's official form by its real field names. First Medical's form has no fillable fields, so we place every value by page coordinates. The cover sheet and policy letter are generated on the same pass.
-- **Vitest** tests the estimator, plan rules, validators and the generated PDFs. **Playwright** runs the full patient and provider flows end to end on desktop and phone viewports, including against the live site.
+- **Vitest** tests the estimator, plan rules, validators and the generated PDFs. **Playwright** runs the full patient flow end to end on desktop and phone viewports, including against the live site.
 - **Caddy on a small EC2 instance** serves the static files over HTTPS.
 
 ## Challenges we ran into
