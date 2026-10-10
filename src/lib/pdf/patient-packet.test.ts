@@ -90,6 +90,12 @@ describe('patient packet', () => {
 		const all = stepsIn({ route: 'ambulance', preauth: true, otherCoverage: true }).at(-1) ?? '';
 		for (const x of ['informe médico', 'autorización previa', 'otro seguro']) expect(all).toContain(x);
 		expect(stepsIn({ delivery: 'email' })[0]).toContain('Espere');
+		for (const d of ['before', 'print', 'email'] as const) {
+			const first = stepsIn({ delivery: d })[0];
+			for (const x of ['sección E', 'timbrado y firmado', 'licencia y NPI', 'ICD-10', 'lo pagado', 'balance pendiente']) expect(first).toContain(x);
+			const fm = stepsIn({ insurer: 'first-medical', route: 'routine', delivery: d })[0];
+			for (const x of ['Sección 3', 'teléfono y NPI', 'ICD-10', 'códigos CPT', 'lo pagado']) expect(fm).toContain(x);
+		}
 		const before = stepsIn({ insurer: 'first-medical', route: 'routine', delivery: 'before', deadline: '', deadlineDays: 90 });
 		expect(before[0]).toContain('Lleve este paquete a su cita');
 		expect(before.at(-1)).toContain('90 días');

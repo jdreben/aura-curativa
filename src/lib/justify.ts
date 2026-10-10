@@ -214,7 +214,7 @@ export function packetSteps(s: StepsInput): string[] {
 	const send = (when: string) => `Envíe el formulario, la carta y ${list(attach)} ${when}. Guarde una copia de todo.`;
 	const section = ts ? 'la sección E (Información sobre los servicios)' : 'la Sección 3 (Información del Proveedor)';
 	const receipt = ts
-		? 'También, pida que su proveedor le dé un recibo original, timbrado y firmado, con su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado.'
+		? 'También, pida que su proveedor le dé un recibo original, timbrado y firmado, con su nombre, dirección, especialidad, licencia y NPI, el diagnóstico (ICD-10), el código de cada servicio y lo pagado. Recibos de caja o facturas que solo digan "balance pendiente" no se aceptan.'
 		: 'También, pida que su proveedor le dé un recibo original con su nombre, dirección, teléfono y NPI, el diagnóstico (ICD-10), los códigos CPT de cada servicio y lo pagado.';
 
 	if (s.delivery === 'before') {
@@ -228,7 +228,7 @@ export function packetSteps(s: StepsInput): string[] {
 	const by = `antes del ${s.deadline || 'plazo de su plan'}`;
 	if (s.delivery === 'email') {
 		return [
-			`Espere a que su proveedor le devuelva el formulario con ${section} completada y firmada, y le dé el recibo original.`,
+			`Espere a que su proveedor le devuelva el formulario con ${section} completada y firmada. ${receipt}`,
 			'Imprima el formulario y la carta.',
 			sign,
 			send(by)
